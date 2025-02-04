@@ -3,6 +3,8 @@ import mysql.connector
 import pandas as pd
 import os
 import random
+from flask_paginate import Pagination, get_page_parameter
+
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "uploads"
@@ -34,6 +36,7 @@ def get_db_connection():
         print(f"⚠️ Erreur de connexion MySQL: {err}")
         return None
 
+# filepath: /c:/Users/julie/Documents/mspr1/app.py
 # Route principale : Afficher les données
 @app.route('/')
 def index():
@@ -69,8 +72,6 @@ def index():
     connection.close()
 
     return render_template('index.html', data=data, page=page, total_pages=total_pages, sort_by=sort_by, order=order)
-
-
 
 # Route pour ajouter une nouvelle entrée
 @app.route('/ajout')
