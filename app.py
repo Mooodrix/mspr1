@@ -53,13 +53,21 @@ def index():
         return "Erreur de connexion à la base de données", 500
 
     cursor = connection.cursor(dictionary=True)
+    
+    # Récupérer le nombre total d'entrées
+    cursor.execute("SELECT COUNT(*) AS total FROM monkeypox_data;")
+    total_entries = cursor.fetchone()["total"]
+    total_pages = (total_entries // per_page) + (1 if total_entries % per_page > 0 else 0)
+    
+    # Récupérer les données paginées et triées
     query = f"SELECT * FROM monkeypox_data ORDER BY {sort_by} {order_sql} LIMIT {per_page} OFFSET {offset};"
     cursor.execute(query)
     data = cursor.fetchall()
+    
     cursor.close()
     connection.close()
 
-    return render_template('index.html', data=data, sort_by=sort_by, order=order, page=page)
+    return render_template('index.html', data=data, page=page, total_pages=total_pages, sort_by=sort_by, order=order)
 
 
 
