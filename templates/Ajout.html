@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Données Monkeypox</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: #343a40;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            color: white;
+            padding: 10px 20px;
+            display: block;
+            text-decoration: none;
+        }
+        .sidebar a:hover {
+            background: #495057;
+        }
+        .content {
+            margin-left: 260px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barre de navigation verticale -->
+    <div class="sidebar">
+        <h4 class="text-center text-light">📊 Monkeypox</h4>
+        <a href="/">🏠 Accueil</a>
+        <a href="/graphique">📈 Graphique</a>
+        <a href="/ajout" class="btn btn-primary mt-3">➕ Ajouter</a>
+        <a href="/importCSV" class="btn btn-success mt-3">📂 Importer CSV</a>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="content">
+        <h2 class="text-center mb-4">➕ Ajouter des Données Monkeypox</h2>
+
+        <!-- Formulaire d'ajout -->
+        <form action="/add" method="POST" class="mb-4 p-3 border rounded bg-white shadow-sm">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="location" class="form-control" placeholder="Lieu" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="iso_code" class="form-control" placeholder="Code ISO" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="date" name="date" class="form-control" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" name="total_cases" class="form-control" placeholder="Total Cas" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">➕ Ajouter</button>
+                </div>
+            </div>
+        </form>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
