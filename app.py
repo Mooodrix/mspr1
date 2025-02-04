@@ -2,17 +2,19 @@ from flask import Flask, render_template, request, redirect, url_for
 import mysql.connector
 import pandas as pd
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "uploads"
 
 # Configuration MySQL
 config = {
-    'host': 'mysql-10befa8c-keskoum120-db6d.b.aivencloud.com',
-    'port': 27381,
-    'user': 'avnadmin',
-    'password': 'AVNS_AEfYMTwHdCFIzRZjyoS',
-    'database': 'monkeypox_db',
+    'host': os.getenv('DB_HOST'),
+    'port': int(os.getenv('DB_PORT', 3306)),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'database': os.getenv('DB_NAME'),
     'ssl_ca': 'aiven-ca-cert.pem',
     'connect_timeout': 10
 }
