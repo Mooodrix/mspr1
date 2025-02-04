@@ -8,7 +8,13 @@ app.config["UPLOAD_FOLDER"] = "uploads"
 
 # Configuration MySQL
 config = {
-    
+    'host': 'mysql-10befa8c-keskoum120-db6d.b.aivencloud.com',
+    'port': 27381,
+    'user': 'avnadmin',
+    'password': 'AVNS_AEfYMTwHdCFIzRZjyoS',
+    'database': 'monkeypox_db',
+    'ssl_ca': 'aiven-ca-cert.pem',
+    'connect_timeout': 10
 }
 
 # Colonnes attendues dans le CSV
