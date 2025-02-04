@@ -38,6 +38,9 @@ def get_db_connection():
 def index():
     sort_by = request.args.get('sort_by', 'date')  # Trier par défaut par date
     order = request.args.get('order', 'desc')  # Trier par défaut en décroissant
+    page = int(request.args.get('page', 1))  # Page actuelle (par défaut 1)
+    per_page = 20  # Nombre d'éléments par page
+    offset = (page - 1) * per_page
 
     valid_columns = {"location", "iso_code", "date", "total_cases", "total_deaths"}
     if sort_by not in valid_columns:
@@ -50,13 +53,14 @@ def index():
         return "Erreur de connexion à la base de données", 500
 
     cursor = connection.cursor(dictionary=True)
-    query = f"SELECT * FROM monkeypox_data ORDER BY {sort_by} {order_sql} LIMIT 20;"
+    query = f"SELECT * FROM monkeypox_data ORDER BY {sort_by} {order_sql} LIMIT {per_page} OFFSET {offset};"
     cursor.execute(query)
     data = cursor.fetchall()
     cursor.close()
     connection.close()
 
-    return render_template('index.html', data=data, sort_by=sort_by, order=order)
+    return render_template('index.html', data=data, sort_by=sort_by, order=order, page=page)
+
 
 
 # Route pour ajouter une nouvelle entrée
