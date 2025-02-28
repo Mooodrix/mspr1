@@ -40,6 +40,11 @@ def get_db_connection():
 # Route principale : Afficher les données
 @app.route('/')
 def index():
+    return render_template('index.html')
+
+
+@app.route('/tableau')
+def tableau():
     sort_by = request.args.get('sort_by', 'date')  # Trier par défaut par date
     order = request.args.get('order', 'desc')  # Trier par défaut en décroissant
     page = int(request.args.get('page', 1))  # Page actuelle (par défaut 1)
@@ -71,7 +76,7 @@ def index():
     cursor.close()
     connection.close()
 
-    return render_template('index.html', data=data, page=page, total_pages=total_pages, sort_by=sort_by, order=order)
+    return render_template('Tableau.html', data=data, page=page, total_pages=total_pages, sort_by=sort_by, order=order)
 
 # Route pour ajouter une nouvelle entrée
 @app.route('/ajout')

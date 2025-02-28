@@ -11,26 +11,33 @@
             background-color: #f8f9fa;
         }
         .sidebar {
-            width: 250px;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            background: #343a40;
-            padding-top: 20px;
+        width: 250px;
+        height: 100vh;
+        position: fixed;
+        left: 0;
+        top: 0;
+        background: #343a40;
+        padding-top: 20px;
         }
         .sidebar a {
             color: white;
             padding: 10px 20px;
             display: block;
             text-decoration: none;
+            text-align: center;
+            margin-bottom: 10px;
         }
         .sidebar a:hover {
             background: #495057;
         }
         .content {
-            margin-left: 260px;
+            margin-left: 270px;
             padding: 20px;
+        }
+        .sidebar .bottom-buttons {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
         }
     </style>
 </head>
@@ -38,59 +45,20 @@
 
     <!-- Barre de navigation verticale -->
     <div class="sidebar">
-        <h4 class="text-center text-light">📊 Monkeypox</h4>
+        <button class="btn btn-secondary w-100 mb-4 btn-no-shadow">MonkeyPox</button>
         <a href="/">🏠 Accueil</a>
+        <a href="/tableau">📈 Tableau</a>
         <a href="/graphique">📈 Graphique</a>
-        <a href="/ajout" class="btn btn-primary mt-3">➕ Ajouter</a>
-        <a href="/importCSV" class="btn btn-success mt-3">📂 Importer CSV</a>
+        <div class="bottom-buttons">
+            <a href="/ajout" class="btn btn-primary w-100">➕ Ajouter</a>
+            <a href="/importCSV" class="btn btn-success w-100 mt-2">📂 Importer CSV</a>
+        </div>
     </div>
 
     <!-- Contenu principal -->
     <div class="content">
-        <h2 class="text-center mb-4">📊 Données Monkeypox</h2>
-        <div class="d-flex justify-content-start gap-3 mb-4">
-            <a href="/?sort_by=location&order=asc" class="btn btn-outline-secondary">📍 Pays (A-Z)</a>
-            <a href="/?sort_by=location&order=desc" class="btn btn-outline-secondary">📍 Pays (Z-A)</a>
-            <a href="/?sort_by=date&order=desc" class="btn btn-outline-secondary">📆 Date (récent)</a>
-            <a href="/?sort_by=date&order=asc" class="btn btn-outline-secondary">📆 Date (ancien)</a>
-            <a href="/?sort_by=total_cases&order=asc" class="btn btn-outline-secondary">🦠 Cas (min)</a>
-            <a href="/?sort_by=total_cases&order=desc" class="btn btn-outline-secondary">🦠 Cas (max)</a>
-        </div>
-
-        <!-- Tableau des données -->
-        <table id="dataTable" class="table table-bordered table-striped bg-white shadow-sm">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Lieu</th>
-                    <th>Code ISO</th>
-                    <th>Date</th>
-                    <th>Total Cas</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in data %}
-                <tr>
-                    <td>{{ row.id }}</td>
-                    <td>{{ row.location }}</td>
-                    <td>{{ row.iso_code }}</td>
-                    <td>{{ row.date }}</td>
-                    <td>{{ row.total_cases }}</td>
-                    <td class="d-flex gap-1">
-                        <a href="/edit/{{ row.id }}" class="btn btn-warning btn-sm">✏️ Modifier</a>
-                        <a href="/delete/{{ row.id }}" class="btn btn-danger btn-sm">🗑 Supprimer</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <!-- Pagination -->
-        <nav aria-label="Pagination" class="d-flex justify-content-between align-items-center">
-            <a href="?sort_by={{ sort_by }}&order={{ order }}&page={{ page - 1 }}" class="btn btn-outline-primary {% if page <= 1 %}disabled{% endif %}">⬅️ Précédent</a>
-            <span>Page {{ page }} sur {{ total_pages }}</span>
-            <a href="?sort_by={{ sort_by }}&order={{ order }}&page={{ page + 1 }}" class="btn btn-outline-primary {% if page >= total_pages %}disabled{% endif %}">Suivant ➡️</a>
-        </nav>
+        <h2 class="text-center mb-5">Bienvenue sur la page d'accueil de la gestion des données Monkeypox</h2>
+        <p class="text-center">Utilisez le menu de navigation pour accéder aux différentes fonctionnalités de l'application.</p>
     </div>
 
 </body>
