@@ -5,145 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Données Monkeypox</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: #343a40;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            color: white;
+            padding: 10px 20px;
+            display: block;
+            text-decoration: none;
+        }
+        .sidebar a:hover {
+            background: #495057;
+        }
+        .content {
+            margin-left: 260px;
+            padding: 20px;
+        }
+    </style>
 </head>
-<body class="container mt-5">
-<<<<<<< HEAD
-    <div class="d-flex justify-content-between mb-3">
-        <a href="?page={{ page - 1 }}" class="btn btn-secondary" {% if page <= 1 %}style="display:none"{% endif %}>⬅️ Précédent</a>
-        <a href="?page={{ page + 1 }}" class="btn btn-secondary">Suivant ➡️</a>
+<body>
+
+    <!-- Barre de navigation verticale -->
+    <div class="sidebar">
+        <h4 class="text-center text-light">📊 Monkeypox</h4>
+        <a href="/">🏠 Accueil</a>
+        <a href="/graphique">📈 Graphique</a>
+        <a href="/ajout" class="btn btn-primary mt-3">➕ Ajouter</a>
+        <a href="/importCSV" class="btn btn-success mt-3">📂 Importer CSV</a>
     </div>
 
-    <h2 class="text-center mb-4">📊 Données Monkeypox</h2>
-
-    <!-- Formulaire d'ajout -->
-    <form action="/add" method="POST" class="mb-4">
-        <!-- Options de tri -->
-        <div class="mb-3 text-center">
-            <strong>Trier par :</strong>
-            <div class="btn-group" role="group">
-                <a href="/?sort_by=location&order=asc" class="btn btn-light btn-sm">📍 Pays (A-Z)</a>
-                <a href="/?sort_by=location&order=desc" class="btn btn-light btn-sm">📍 Pays (Z-A)</a>
-                <a href="/?sort_by=date&order=desc" class="btn btn-light btn-sm">📆 Date (récent)</a>
-                <a href="/?sort_by=date&order=asc" class="btn btn-light btn-sm">📆 Date (ancien)</a>
-                <a href="/?sort_by=total_cases&order=desc" class="btn btn-light btn-sm">🦠 Cas (max)</a>
-                <a href="/?sort_by=total_cases&order=asc" class="btn btn-light btn-sm">🦠 Cas (min)</a>
-            </div>
+    <!-- Contenu principal -->
+    <div class="content">
+        <h2 class="text-center mb-4">📊 Données Monkeypox</h2>
+        <div class="d-flex justify-content-start gap-3 mb-4">
+            <a href="/?sort_by=location&order=asc" class="btn btn-outline-secondary">📍 Pays (A-Z)</a>
+            <a href="/?sort_by=location&order=desc" class="btn btn-outline-secondary">📍 Pays (Z-A)</a>
+            <a href="/?sort_by=date&order=desc" class="btn btn-outline-secondary">📆 Date (récent)</a>
+            <a href="/?sort_by=date&order=asc" class="btn btn-outline-secondary">📆 Date (ancien)</a>
+            <a href="/?sort_by=total_cases&order=asc" class="btn btn-outline-secondary">🦠 Cas (min)</a>
+            <a href="/?sort_by=total_cases&order=desc" class="btn btn-outline-secondary">🦠 Cas (max)</a>
         </div>
 
-        <div class="row g-3">
-=======
-
-    <h2 class="text-center mb-4">📊 Données Monkeypox</h2>
-
-    <!-- Options de tri -->
-    <div class="mb-3 text-center">
-        <strong>Trier par :</strong>
-        <a href="/?sort_by=location&order=asc&page={{ page }}" class="btn btn-light btn-sm {% if sort_by == 'location' and order == 'asc' %}btn-primary{% endif %}">📍 Pays (A-Z)</a>
-        <a href="/?sort_by=location&order=desc&page={{ page }}" class="btn btn-light btn-sm {% if sort_by == 'location' and order == 'desc' %}btn-primary{% endif %}">📍 Pays (Z-A)</a>
-        <a href="/?sort_by=date&order=desc&page={{ page }}" class="btn btn-light btn-sm {% if sort_by == 'date' and order == 'desc' %}btn-primary{% endif %}">📆 Date (récent)</a>
-        <a href="/?sort_by=date&order=asc&page={{ page }}" class="btn btn-light btn-sm {% if sort_by == 'date' and order == 'asc' %}btn-primary{% endif %}">📆 Date (ancien)</a>
-        <a href="/?sort_by=total_cases&order=desc&page={{ page }}" class="btn btn-light btn-sm {% if sort_by == 'total_cases' and order == 'desc' %}btn-primary{% endif %}">🦠 Cas (max)</a>
-        <a href="/?sort_by=total_cases&order=asc&page={{ page }}" class="btn btn-light btn-sm {% if sort_by == 'total_cases' and order == 'asc' %}btn-primary{% endif %}">🦠 Cas (min)</a>
+        <!-- Tableau des données -->
+        <table id="dataTable" class="table table-bordered table-striped bg-white shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Lieu</th>
+                    <th>Code ISO</th>
+                    <th>Date</th>
+                    <th>Total Cas</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    <td>{{ row.id }}</td>
+                    <td>{{ row.location }}</td>
+                    <td>{{ row.iso_code }}</td>
+                    <td>{{ row.date }}</td>
+                    <td>{{ row.total_cases }}</td>
+                    <td class="d-flex gap-1">
+                        <a href="/edit/{{ row.id }}" class="btn btn-warning btn-sm">✏️ Modifier</a>
+                        <a href="/delete/{{ row.id }}" class="btn btn-danger btn-sm">🗑 Supprimer</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <!-- Pagination -->
+        <nav aria-label="Pagination" class="d-flex justify-content-between align-items-center">
+            <a href="?sort_by={{ sort_by }}&order={{ order }}&page={{ page - 1 }}" class="btn btn-outline-primary {% if page <= 1 %}disabled{% endif %}">⬅️ Précédent</a>
+            <span>Page {{ page }} sur {{ total_pages }}</span>
+            <a href="?sort_by={{ sort_by }}&order={{ order }}&page={{ page + 1 }}" class="btn btn-outline-primary {% if page >= total_pages %}disabled{% endif %}">Suivant ➡️</a>
+        </nav>
     </div>
 
-    <!-- Indication des filtres actifs -->
-    <p class="text-center">
-        🔍 Filtre actif : <strong>{{ sort_by.replace('_', ' ').title() }}</strong> ({{ "⬆️" if order == "asc" else "⬇️" }})
-    </p>
-
-    <!-- Formulaire d'ajout -->
-    <form action="/add" method="POST" class="mb-4 p-3 border rounded shadow-sm bg-light">
-        <div class="row">
->>>>>>> c7fe0d79433f2cbbd770052ef124cb86ebbd9d0a
-            <div class="col-md-3">
-                <input type="text" name="location" class="form-control" placeholder="Lieu" required>
-            </div>
-            <div class="col-md-2">
-                <input type="text" name="iso_code" class="form-control" placeholder="Code ISO" required>
-            </div>
-            <div class="col-md-3">
-                <input type="date" name="date" class="form-control" required>
-            </div>
-            <div class="col-md-2">
-                <input type="number" name="total_cases" class="form-control" placeholder="Total Cas" required>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">➕ Ajouter</button>
-            </div>
-        </div>
-    </form>
-
-    <!-- Tableau des données -->
-<<<<<<< HEAD
-    <table class="table table-bordered table-striped">
-=======
-    <table class="table table-bordered table-hover">
->>>>>>> c7fe0d79433f2cbbd770052ef124cb86ebbd9d0a
-        <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Lieu</th>
-                <th>Code ISO</th>
-                <th>Date</th>
-                <th>Total Cas</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in data %}
-            <tr>
-                <td>{{ row.id }}</td>
-                <td>{{ row.location }}</td>
-                <td>{{ row.iso_code }}</td>
-                <td>{{ row.date }}</td>
-                <td>{{ row.total_cases }}</td>
-                <td class="d-flex gap-1">
-                    <!-- Formulaire de modification -->
-                    <form action="/edit/{{ row.id }}" method="POST" class="d-inline">
-<<<<<<< HEAD
-                        <input type="text" name="location" value="{{ row.location }}" class="form-control form-control-sm d-inline-block w-auto" required>
-                        <input type="text" name="iso_code" value="{{ row.iso_code }}" class="form-control form-control-sm d-inline-block w-auto" required>
-                        <input type="date" name="date" value="{{ row.date }}" class="form-control form-control-sm d-inline-block w-auto" required>
-                        <input type="number" name="total_cases" value="{{ row.total_cases }}" class="form-control form-control-sm d-inline-block w-auto" required>
-=======
-                        <input type="hidden" name="location" value="{{ row.location }}">
-                        <input type="hidden" name="iso_code" value="{{ row.iso_code }}">
-                        <input type="hidden" name="date" value="{{ row.date }}">
-                        <input type="hidden" name="total_cases" value="{{ row.total_cases }}">
->>>>>>> c7fe0d79433f2cbbd770052ef124cb86ebbd9d0a
-                        <button type="submit" class="btn btn-warning btn-sm">✏️ Modifier</button>
-                    </form>
-                    <!-- Bouton de suppression -->
-                    <a href="/delete/{{ row.id }}" class="btn btn-danger btn-sm">🗑 Supprimer</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-<<<<<<< HEAD
-    <!-- Formulaire d'upload CSV -->
-    <form action="/upload" method="POST" enctype="multipart/form-data" class="mb-3">
-=======
-    <!-- Pagination -->
-    <nav aria-label="Pagination" class="d-flex justify-content-between align-items-center">
-        <a href="?sort_by={{ sort_by }}&order={{ order }}&page={{ page - 1 }}" class="btn btn-outline-primary {% if page <= 1 %}disabled{% endif %}">⬅️ Précédent</a>
-        <span>Page {{ page }} sur {{ total_pages }}</span>
-        <a href="?sort_by={{ sort_by }}&order={{ order }}&page={{ page + 1 }}" class="btn btn-outline-primary {% if page >= total_pages %}disabled{% endif %}">Suivant ➡️</a>
-    </nav>
-
-    <!-- Formulaire d'upload CSV -->
-    <form action="/upload" method="POST" enctype="multipart/form-data" class="mt-4 p-3 border rounded shadow-sm bg-light">
->>>>>>> c7fe0d79433f2cbbd770052ef124cb86ebbd9d0a
-        <div class="input-group">
-            <input type="file" name="file" class="form-control" accept=".csv" required>
-            <button type="submit" class="btn btn-success">📂 Importer CSV</button>
-        </div>
-    </form>
-<<<<<<< HEAD
-=======
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
->>>>>>> c7fe0d79433f2cbbd770052ef124cb86ebbd9d0a
 </body>
 </html>

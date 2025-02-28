@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, redirect, url_for
 import mysql.connector
 import pandas as pd
 import os
+import random
+from flask_paginate import Pagination, get_page_parameter
+
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "uploads"
@@ -33,6 +36,7 @@ def get_db_connection():
         print(f"⚠️ Erreur de connexion MySQL: {err}")
         return None
 
+# filepath: /c:/Users/julie/Documents/mspr1/app.py
 # Route principale : Afficher les données
 @app.route('/')
 def index():
@@ -69,30 +73,10 @@ def index():
 
     return render_template('index.html', data=data, page=page, total_pages=total_pages, sort_by=sort_by, order=order)
 
-
-
 # Route pour ajouter une nouvelle entrée
-@app.route('/add', methods=['POST'])
-def add_entry():
-    location = request.form['location']
-    iso_code = request.form['iso_code']
-    date = request.form['date']
-    total_cases = request.form['total_cases']
-
-    connection = get_db_connection()
-    if connection is None:
-        return "⚠️ Erreur de connexion à la base de données", 500
-
-    cursor = connection.cursor()
-    cursor.execute("""
-        INSERT INTO monkeypox_data (location, iso_code, date, total_cases) 
-        VALUES (%s, %s, %s, %s)
-    """, (location, iso_code, date, total_cases))
-    
-    connection.commit()
-    cursor.close()
-    connection.close()
-    return redirect(url_for('index'))
+@app.route('/ajout')
+def ajout():
+    return render_template('Ajout.html')
 
 # Route pour supprimer une entrée
 @app.route('/delete/<int:id>')
@@ -131,68 +115,19 @@ def edit_entry(id):
     connection.close()
     return redirect(url_for('index'))
 
-# Route pour uploader un fichier CSV en batch
-@app.route('/upload', methods=['POST'])
-def upload_csv():
-    if 'file' not in request.files:
-        return "⚠️ Aucun fichier sélectionné", 400
+@app.route('/importCSV')
+def import_csv():
+    return render_template('importCSV.html')
+    
+# Exemple de données statiques pour le graphique (tu peux les récupérer de ta base de données)
+@app.route('/graphique')
+def graphique():
+    # Exemple de labels et de données
+    labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai']
+    cases = [random.randint(1, 50) for _ in labels]  # Générer des nombres aléatoires pour les cas
 
-    file = request.files['file']
-    if file.filename == '':
-        return "⚠️ Nom de fichier invalide", 400
-
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
-    file.save(filepath)
-
-    try:
-        print("📥 Lecture du fichier CSV...")
-        batch_size = 500  # Taille des lots
-        total_rows = 0    # Compteur total
-        connection = get_db_connection()
-        if connection is None:
-            return "⚠️ Erreur de connexion à la base de données", 500
-
-        cursor = connection.cursor()
-
-        for chunk in pd.read_csv(filepath, chunksize=batch_size):
-            print(f"➡️ Traitement de {len(chunk)} lignes...")
-            
-            # Compter les lignes traitées
-            total_rows += len(chunk)
-            print(f"📊 Total traité jusqu'ici: {total_rows} lignes")
-
-            # Vérification des colonnes valides
-            valid_columns = [col for col in chunk.columns if col in EXPECTED_COLUMNS]
-            chunk = chunk[valid_columns]
-
-            if not valid_columns:
-                os.remove(filepath)
-                return "⚠️ Aucune colonne valide trouvée dans le fichier CSV.", 400
-
-            # Remplacer NaN par None pour éviter erreurs MySQL
-            chunk = chunk.where(pd.notna(chunk), None)
-
-            # Construction de la requête SQL
-            placeholders = ", ".join(["%s"] * len(valid_columns))
-            columns = ", ".join(valid_columns)
-            sql = f"INSERT INTO monkeypox_data ({columns}) VALUES ({placeholders})"
-
-            # Insertion des données par batch
-            data_tuples = [tuple(row) for row in chunk.to_numpy()]
-            cursor.executemany(sql, data_tuples)
-            connection.commit()
-
-        print(f"✅ Import terminé ! {total_rows} lignes insérées.")
-        cursor.close()
-        connection.close()
-
-    except Exception as e:
-        print(f"⚠️ Erreur lors de l'import CSV: {e}")
-        return f"⚠️ Erreur: {e}", 500
-    finally:
-        os.remove(filepath)
-
-    return redirect(url_for('index'))
+    # Rendre la page avec les données
+    return render_template('graphique.html', labels=labels, cases=cases)
 
 
 if __name__ == '__main__':
