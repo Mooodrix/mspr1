@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphiques Monkeypox</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+    
+        .sidebar {
+            width: 250px;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+            color: white;
+            border-radius: 0 15px 15px 0;
+            padding-right: 5px;
+        }
+    
+        .sidebar nav a {
+            transition: 0.3s;
+            color: white;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 5px 0;
+        }
+    
+        .sidebar nav a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+    
+        .sidebar .btn {
+            margin: 5px 0;
+            text-align: left;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+    
+        .sidebar .btn:hover {
+            transform: translateX(5px);
+        }
+    
+        .content {
+            margin-left: 270px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            margin-right: 20px;
+        }
+    
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: 0.3s;
+            margin-bottom: 30px;
+        }
+    
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+    
+        .card-header {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            border-radius: 10px 10px 0 0;
+            padding: 15px;
+        }
+    
+        .card-body {
+            padding: 20px;
+        }
+    
+        .filter-section {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            border: none;
+            transition: 0.3s;
+        }
+    
+        .btn-primary:hover {
+            background: linear-gradient(145deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+        }
+        
+        .sidebar .mt-auto {
+            margin-bottom: 20px;
+            padding: 0 15px;
+        }
+
+        .sidebar .btn {
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: left;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            display: none;
+            margin: 20px 0;
+        }
+        
+        .alert-container {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Barre de navigation verticale -->
+<div class="sidebar d-flex flex-column p-3 bg-light vh-100">
+    <!-- Titre de la page en tant que bouton -->
+    <a href="/" class="btn btn-primary w-100 fw-bold text-start">
+        🐒 Monkeypox
+    </a>
+
+    <!-- Liens de navigation -->
+    <nav class="mt-3">
+        <a href="/" class="btn btn-outline-dark w-100 text-start mb-2">🏠 Accueil</a>
+        <a href="/tableau" class="btn btn-outline-dark w-100 text-start mb-2">📊 Tableau</a>
+        <a href="/graphique" class="btn btn-outline-dark w-100 text-start mb-2">📈 Graphique</a>
+        <a href="/world-map" class="btn btn-outline-dark w-100 text-start">🌎 Carte mondiale</a>
+    </nav>
+
+    <!-- Boutons en bas -->
+    <div class="mt-auto">
+        <a href="/ajout" class="btn btn-primary w-100 mb-2">➕ Ajouter</a>
+        <a href="/importCSV" class="btn btn-success w-100">📂 Importer CSV</a>
+    </div>
+</div>
+
+<!-- Contenu principal -->
+<div class="content">
+    <h2 class="text-center mb-4">📊 Visualisation des données Monkeypox</h2>
+    
+    <!-- Premier graphique: Camembert -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Répartition par continent/région</h5>
+        </div>
+        <div class="card-body">
+            <div class="filter-section">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="pie-metric" class="form-label">Donnée à visualiser</label>
+                        <select id="pie-metric" class="form-select">
+                            <option value="total_cases">Total des cas</option>
+                            <option value="total_deaths">Total des décès</option>
+                            <option value="cases_per_million">Cas par million d'habitants</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="pie-view-type" class="form-label">Type de visualisation</label>
+                        <select id="pie-view-type" class="form-select">
+                            <option value="continent">Par continent</option>
+                            <option value="top-countries">Pays les plus touchés</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12 mt-3 d-flex justify-content-end">
+                        <button id="update-pie" class="btn btn-primary">Mettre à jour</button>
+                    </div>
+                </div>
+            </div>
+            <div id="pie-loading" class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+            </div>
+            <div id="pie-alert" class="alert-container"></div>
+            <div class="chart-container">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deuxième graphique: Ligne avec points -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Évolution temporelle</h5>
+        </div>
+        <div class="card-body">
+            <div class="filter-section">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="line-data-type" class="form-label">Type de données</label>
+                        <select id="line-data-type" class="form-select">
+                            <option value="total_cases">Cas cumulés</option>
+                            <option value="new_cases">Nouveaux cas</option>
+                            <option value="new_cases_smoothed">Cas lissés (moyenne mobile)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="line-time-range" class="form-label">Période</label>
+                        <select id="line-time-range" class="form-select">
+                            <option value="3m">3 derniers mois</option>
+                            <option value="6m">6 derniers mois</option>
+                            <option value="1y">Dernière année</option>
+                            <option value="2022">Depuis 2022</option>
+                            <option value="all">Toutes les données</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="line-location" class="form-label">Zone géographique</label>
+                        <select id="line-location" class="form-select">
+                            <option value="all">Monde entier</option>
+                            <option value="top5">5 pays les plus touchés</option>
+                            <option value="continent">Par continent</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button id="update-line" class="btn btn-primary w-100">Mettre à jour</button>
+                    </div>
+                </div>
+            </div>
+            <div id="line-loading" class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+            </div>
+            <div id="line-alert" class="alert-container"></div>
+            <div class="chart-container">
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Troisième graphique: Barres -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Comparaison entre pays</h5>
+        </div>
+        <div class="card-body">
+            <div class="filter-section">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="bar-comparison" class="form-label">Comparaison</label>
+                        <select id="bar-comparison" class="form-select">
+                            <option value="cases_deaths">Cas vs Décès</option>
+                            <option value="per_million">Par million d'habitants</option>
+                            <option value="growth_rate">Taux de croissance</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="bar-region" class="form-label">Région</label>
+                        <select id="bar-region" class="form-select">
+                            <option value="all">Toutes les régions</option>
+                            <option value="europe">Europe</option>
+                            <option value="north_america">Amérique du Nord</option>
+                            <option value="south_america">Amérique du Sud</option>
+                            <option value="asia">Asie</option>
+                            <option value="africa">Afrique</option>
+                            <option value="oceania">Océanie</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="bar-count" class="form-label">Nombre de pays</label>
+                        <select id="bar-count" class="form-select">
+                            <option value="5">5 pays</option>
+                            <option value="10">10 pays</option>
+                            <option value="15">15 pays</option>
+                            <option value="20">20 pays</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button id="update-bar" class="btn btn-primary w-100">Mettre à jour</button>
+                    </div>
+                </div>
+            </div>
+            <div id="bar-loading" class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+            </div>
+            <div id="bar-alert" class="alert-container"></div>
+            <div class="chart-container">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fonction pour afficher les alertes
+        function showAlert(containerId, message, type = 'danger') {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>`;
+        }
+        
+        // Fonction pour afficher/masquer les spinners de chargement
+        function toggleLoading(id, show) {
+            const spinner = document.getElementById(id);
+            spinner.style.display = show ? 'block' : 'none';
+        }
+        
+        // Définition des couleurs pour les graphiques
+        const chartColors = [
+            'rgba(255, 99, 132, 0.7)',
+            'rgba(54, 162, 235, 0.7)',
+            'rgba(255, 206, 86, 0.7)',
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(153, 102, 255, 0.7)',
+            'rgba(255, 159, 64, 0.7)',
+            'rgba(199, 199, 199, 0.7)',
+            'rgba(83, 102, 255, 0.7)',
+            'rgba(40, 159, 64, 0.7)',
+            'rgba(210, 99, 132, 0.7)',
+            'rgba(100, 162, 235, 0.7)',
+            'rgba(200, 206, 86, 0.7)',
+            'rgba(120, 192, 192, 0.7)',
+            'rgba(180, 102, 255, 0.7)',
+            'rgba(220, 159, 64, 0.7)'
+        ];
+        
+        const chartBorderColors = chartColors.map(color => color.replace('0.7', '1'));
+        
+        // Données de démonstration pour les continents
+        const continentData = {
+            labels: ['Europe', 'Amérique du Nord', 'Amérique du Sud', 'Asie', 'Afrique', 'Océanie'],
+            values: [45, 25, 15, 8, 5, 2]
+        };
+        
+        // Données de démonstration pour les pays les plus touchés
+        const topCountriesData = {
+            labels: ['États-Unis', 'Brésil', 'Royaume-Uni', 'Espagne', 'France'],
+            values: [25, 15, 12, 10, 8]
+        };
+        
+        // Données de démonstration pour l'évolution temporelle
+        const timelineData = {
+            labels: ['Jan 2022', 'Fév 2022', 'Mar 2022', 'Avr 2022', 'Mai 2022', 'Juin 2022', 'Juil 2022', 'Août 2022', 'Sep 2022', 'Oct 2022'],
+            datasets: [
+                {
+                    label: 'Monde',
+                    data: [100, 150, 300, 500, 800, 1200, 1700, 2500, 3200, 4000],
+                    borderColor: chartBorderColors[0],
+                    backgroundColor: chartColors[0],
+                    tension: 0.3
+                }
+            ]
+        };
+        
+        // Initialiser les graphiques
+        // 1. Graphique en camembert
+        const pieCtx = document.getElementById('pieChart').getContext('2d');
+        const pieChart = new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: continentData.labels,
+                datasets: [{
+                    data: continentData.values,
+                    backgroundColor: chartColors,
+                    borderColor: chartBorderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Répartition des cas par continent'
+                    }
+                }
+            }
+        });
+        
+        // 2. Graphique linéaire
+        const lineCtx = document.getElementById('lineChart').getContext('2d');
+        const lineChart = new Chart(lineCtx, {
+            type: 'line',
+            data: timelineData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Évolution des cas dans le monde'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: function(context) {
+                            // Réduire la taille des points quand il y a beaucoup de données
+                            const dataLength = context.chart.data.labels.length;
+                            if (dataLength > 30) return 1;
+                            if (dataLength > 20) return 2;
+                            if (dataLength > 10) return 3;
+                            return 4;
+                        },
+                        hoverRadius: function(context) {
+                            // Taille au survol adaptative
+                            const dataLength = context.chart.data.labels.length;
+                            if (dataLength > 30) return 3;
+                            if (dataLength > 20) return 4;
+                            if (dataLength > 10) return 5;
+                            return 6;
+                        }
+                    },
+                    line: {
+                        tension: 0.3
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Nombre de cas'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 3. Graphique à barres
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        const barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: topCountriesData.labels,
+                datasets: [{
+                    label: 'Total des cas',
+                    data: topCountriesData.values,
+                    backgroundColor: chartColors[0],
+                    borderColor: chartBorderColors[0],
+                    borderWidth: 1
+                },
+                {
+                    label: 'Total des décès',
+                    data: topCountriesData.values.map(v => v * 0.05), // 5% de décès pour l'exemple
+                    backgroundColor: chartColors[1],
+                    borderColor: chartBorderColors[1],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Cas et décès par pays'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Nombre'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Pays'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Fonction pour mettre à jour le graphique en camembert
+        function updatePieChart() {
+            toggleLoading('pie-loading', true);
+            document.getElementById('pie-alert').innerHTML = '';
+            
+            const metric = document.getElementById('pie-metric').value;
+            const viewType = document.getElementById('pie-view-type').value;
+            
+            // Appel à l'API avec les paramètres corrects
+            fetch(`/api/pie-data?metric=${metric}&view_type=${viewType}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Erreur lors de la récupération des données");
+                    return response.json();
+                })
+                .then(data => {
+                    // Vérifier que nous avons des données
+                    if (!data.labels || data.labels.length === 0) {
+                        showAlert('pie-alert', 'Aucune donnée disponible pour ces filtres.', 'warning');
+                        toggleLoading('pie-loading', false);
+                        return;
+                    }
+                    
+                    // Mettre à jour les données du graphique
+                    pieChart.data.labels = data.labels;
+                    pieChart.data.datasets[0].data = data.values;
+                    
+                    // Mettre à jour le titre en fonction des filtres
+                    let metricLabel = '';
+                    switch(metric) {
+                        case 'total_cases': metricLabel = 'cas'; break;
+                        case 'total_deaths': metricLabel = 'décès'; break;
+                        case 'cases_per_million': metricLabel = 'cas par million d\'habitants'; break;
+                    }
+                    
+                    let viewTypeLabel = viewType === 'continent' ? 'par continent' : 'pays les plus touchés';
+                    pieChart.options.plugins.title.text = `Répartition des ${metricLabel} ${viewTypeLabel}`;
+                    
+                    pieChart.update();
+                    toggleLoading('pie-loading', false);
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la mise à jour du graphique:', error);
+                    showAlert('pie-alert', 'Erreur lors du chargement des données. Veuillez réessayer plus tard.');
+                    toggleLoading('pie-loading', false);
+                });
+        }
+        
+        // Fonction pour mettre à jour le graphique linéaire
+        function updateLineChart() {
+            toggleLoading('line-loading', true);
+            document.getElementById('line-alert').innerHTML = '';
+            
+            const dataType = document.getElementById('line-data-type').value;
+            const timeRange = document.getElementById('line-time-range').value;
+            const location = document.getElementById('line-location').value;
+            
+            // Simulation de requête API - Remplacer par une requête réelle
+            setTimeout(() => {
+                // Générer des données en fonction des filtres
+                let labels = [];
+                let datasets = [];
+                
+                // Générer les dates en fonction de la plage de temps
+                const getLabels = () => {
+                    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+                    const labels = [];
+                    
+                    if (timeRange === '3m') {
+                        for (let i = 0; i < 3; i++) {
+                            labels.push(months[i % 12] + ' 2023');
+                        }
+                    } else if (timeRange === '6m') {
+                        for (let i = 0; i < 6; i++) {
+                            labels.push(months[i % 12] + ' 2023');
+                        }
+                    } else if (timeRange === '1y') {
+                        for (let i = 0; i < 12; i++) {
+                            labels.push(months[i % 12] + ' 2023');
+                        }
+                    } else if (timeRange === '2022') {
+                        // Depuis 2022
+                        for (let year = 2022; year <= 2023; year++) {
+                            for (let i = 0; i < 12; i++) {
+                                labels.push(months[i] + ' ' + year);
+                            }
+                        }
+                    } else {
+                        // Toutes les données disponibles
+                        for (let year = 2022; year <= 2023; year++) {
+                            for (let i = 0; i < 12; i++) {
+                                labels.push(months[i] + ' ' + year);
+                            }
+                        }
+                    }
+                    
+                    return labels;
+                };
+                
+                labels = getLabels();
+                
+                // Générer les données en fonction de la localisation
+                if (location === 'all') {
+                    // Mondial
+                    datasets = [{
+                        label: 'Monde',
+                        data: labels.map((_, i) => 100 + i * 150 + Math.random() * 50),
+                        borderColor: chartBorderColors[0],
+                        backgroundColor: chartColors[0]
+                    }];
+                } else if (location === 'top5') {
+                    // Top 5 pays
+                    const countries = ['États-Unis', 'Brésil', 'Royaume-Uni', 'Espagne', 'France'];
+                    
+                    datasets = countries.map((country, i) => ({
+                        label: country,
+                        data: labels.map((_, j) => 50 + j * (30 + i * 10) + Math.random() * 20),
+                        borderColor: chartBorderColors[i],
+                        backgroundColor: chartColors[i]
+                    }));
+                } else {
+                    // Par continent
+                    const continents = ['Europe', 'Amérique du Nord', 'Amérique du Sud', 'Asie', 'Afrique', 'Océanie'];
+                    
+                    datasets = continents.map((continent, i) => ({
+                        label: continent,
+                        data: labels.map((_, j) => 20 + j * (10 + i * 5) + Math.random() * 10),
+                        borderColor: chartBorderColors[i],
+                        backgroundColor: chartColors[i]
+                    }));
+                }
+                
+                // Adapter la taille des points en fonction du nombre de dates
+                const pointRadius = labels.length > 30 ? 1 : (labels.length > 20 ? 2 : (labels.length > 10 ? 3 : 4));
+                const pointHoverRadius = pointRadius + 2;
+                
+                // Mettre à jour les options du graphique
+                lineChart.options.elements.point.radius = pointRadius;
+                lineChart.options.elements.point.hoverRadius = pointHoverRadius;
+                
+                // Mettre à jour les données du graphique
+                lineChart.data.labels = labels;
+                lineChart.data.datasets = datasets;
+                
+                // Mettre à jour le titre
+                let dataTypeLabel = '';
+                switch(dataType) {
+                    case 'total_cases': dataTypeLabel = 'cas cumulés'; break;
+                    case 'new_cases': dataTypeLabel = 'nouveaux cas'; break;
+                    case 'new_cases_smoothed': dataTypeLabel = 'nouveaux cas (lissés)'; break;
+                }
+                
+                let locationLabel = '';
+                switch(location) {
+                    case 'all': locationLabel = 'dans le monde'; break;
+                    case 'top5': locationLabel = 'pour les 5 pays les plus touchés'; break;
+                    case 'continent': locationLabel = 'par continent'; break;
+                }
+                
+                lineChart.options.plugins.title.text = `Évolution des ${dataTypeLabel} ${locationLabel}`;
+                lineChart.update();
+                
+                toggleLoading('line-loading', false);
+            }, 500);
+        }
+        
+        // Fonction pour mettre à jour le graphique à barres
+        function updateBarChart() {
+            toggleLoading('bar-loading', true);
+            document.getElementById('bar-alert').innerHTML = '';
+            
+            const comparison = document.getElementById('bar-comparison').value;
+            const region = document.getElementById('bar-region').value;
+            const count = document.getElementById('bar-count').value;
+            
+            // Simulation de requête API - Remplacer par une requête réelle
+            setTimeout(() => {
+                // Générer des pays en fonction de la région
+                const getCountriesByRegion = () => {
+                    const regionCountries = {
+                        all: ['États-Unis', 'Brésil', 'Royaume-Uni', 'Espagne', 'France', 'Allemagne', 'Italie', 'Canada', 'Mexique', 'Australie', 'Chine', 'Japon', 'Inde', 'Russie', 'Afrique du Sud', 'Nigeria', 'Égypte', 'Argentine', 'Chili', 'Colombie'],
+                        europe: ['Royaume-Uni', 'Espagne', 'France', 'Allemagne', 'Italie', 'Portugal', 'Pays-Bas', 'Belgique', 'Suisse', 'Suède', 'Norvège', 'Finlande', 'Danemark', 'Autriche', 'Pologne', 'République tchèque', 'Hongrie', 'Grèce', 'Irlande', 'Roumanie'],
+                        north_america: ['États-Unis', 'Canada', 'Mexique', 'Panama', 'Costa Rica', 'Guatemala', 'Honduras', 'Nicaragua', 'El Salvador', 'Belize'],
+                        south_america: ['Brésil', 'Argentine', 'Chili', 'Colombie', 'Pérou', 'Équateur', 'Venezuela', 'Bolivie', 'Paraguay', 'Uruguay'],
+                        asia: ['Chine', 'Japon', 'Inde', 'Corée du Sud', 'Thaïlande', 'Vietnam', 'Indonésie', 'Philippines', 'Malaisie', 'Singapour'],
+                        africa: ['Afrique du Sud', 'Nigeria', 'Égypte', 'Maroc', 'Algérie', 'Kenya', 'Ghana', 'Éthiopie', 'Tanzanie', 'Ouganda'],
+                        oceania: ['Australie', 'Nouvelle-Zélande', 'Papouasie-Nouvelle-Guinée', 'Fidji', 'Samoa', 'Tonga', 'Vanuatu', 'Îles Salomon', 'Kiribati', 'Tuvalu']
+                    };
+                    
+                    return regionCountries[region] || regionCountries.all;
+                };
+                
+                const countries = getCountriesByRegion().slice(0, count);
+                
+                // Générer les données en fonction de la comparaison sélectionnée
+                let datasets = [];
+                
+                if (comparison === 'cases_deaths') {
+                    // Cas vs Décès
+                    const casesData = countries.map((_, i) => 1000 - i * 100 + Math.random() * 50);
+                    const deathsData = casesData.map(val => val * (0.02 + Math.random() * 0.03)); // 2-5% de mortalité
+                    
+                    datasets = [
+                        {
+                            label: 'Total des cas',
+                            data: casesData,
+                            backgroundColor: chartColors[0],
+                            borderColor: chartBorderColors[0],
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Total des décès',
+                            data: deathsData,
+                            backgroundColor: chartColors[1],
+                            borderColor: chartBorderColors[1],
+                            borderWidth: 1
+                        }
+                    ];
+                } else if (comparison === 'per_million') {
+                    // Cas par million d'habitants
+                    datasets = [
+                        {
+                            label: 'Cas par million d\'habitants',
+                            data: countries.map((_, i) => 250 - i * 15 + Math.random() * 30),
+                            backgroundColor: chartColors[2],
+                            borderColor: chartBorderColors[2],
+                            borderWidth: 1
+                        }
+                    ];
+                } else {
+                    // Taux de croissance
+                    datasets = [
+                        {
+                            label: 'Taux de croissance hebdomadaire (%)',
+                            data: countries.map(() => Math.random() * 15),
+                            backgroundColor: chartColors[3],
+                            borderColor: chartBorderColors[3],
+                            borderWidth: 1
+                        }
+                    ];
+                }
+                
+                // Mettre à jour les données du graphique
+                barChart.data.labels = countries;
+                barChart.data.datasets = datasets;
+                
+                // Mettre à jour le titre
+                let comparisonLabel = '';
+                switch(comparison) {
+                    case 'cases_deaths': comparisonLabel = 'Cas et décès'; break;
+                    case 'per_million': comparisonLabel = 'Cas par million d\'habitants'; break;
+                    case 'growth_rate': comparisonLabel = 'Taux de croissance'; break;
+                }
+                
+                let regionLabel = '';
+                switch(region) {
+                    case 'all': regionLabel = 'monde'; break;
+                    case 'europe': regionLabel = 'Europe'; break;
+                    case 'north_america': regionLabel = 'Amérique du Nord'; break;
+                    case 'south_america': regionLabel = 'Amérique du Sud'; break;
+                    case 'asia': regionLabel = 'Asie'; break;
+                    case 'africa': regionLabel = 'Afrique'; break;
+                    case 'oceania': regionLabel = 'Océanie'; break;
+                }
+                
+                barChart.options.plugins.title.text = `${comparisonLabel} - Top ${count} pays (${regionLabel})`;
+                barChart.update();
+                
+                toggleLoading('bar-loading', false);
+            }, 500);
+        }
+        
+        // Attacher les événements aux boutons
+        document.getElementById('update-pie').addEventListener('click', updatePieChart);
+        document.getElementById('update-line').addEventListener('click', updateLineChart);
+        document.getElementById('update-bar').addEventListener('click', updateBarChart);
+        
+        // Initialiser les graphiques au chargement de la page
+        updatePieChart();
+        updateLineChart();
+        updateBarChart();
+    });
+</script>
+</body>
+</html>

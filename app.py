@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import mysql.connector
 import pandas as pd
 import os
@@ -124,16 +124,6 @@ def edit_entry(id):
 @app.route('/importCSV')
 def import_csv():
     return render_template('importCSV.html')
-    
-# Exemple de données statiques pour le graphique (tu peux les récupérer de ta base de données)
-@app.route('/graphique')
-def graphique():
-    # Exemple de labels et de données
-    labels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai']
-    cases = [random.randint(1, 50) for _ in labels]  # Générer des nombres aléatoires pour les cas
-
-    # Rendre la page avec les données
-    return render_template('graphique.html', labels=labels, cases=cases)
 
 @app.route('/world-map')
 def world_map():
@@ -234,6 +224,463 @@ def world_map():
                          countries=countries,
                          countries_data=json.dumps(countries_data),
                          stats=stats)
+    
+# Fonction auxiliaire pour mapper les pays à leurs continents
+def get_continent(country):
+    # Dictionnaire simplifié des pays et de leurs continents
+    continents = {
+        'Europe': ['Royaume-Uni', 'Espagne', 'France', 'Allemagne', 'Italie', 'Portugal', 'Pays-Bas', 'Belgique', 'Suisse', 'Suède', 'Norvège', 'Finlande', 'Danemark', 'Autriche', 'Pologne', 'République tchèque', 'Hongrie', 'Grèce', 'Irlande', 'Roumanie'],
+        'Amérique du Nord': ['États-Unis', 'Canada', 'Mexique', 'Panama', 'Costa Rica', 'Guatemala', 'Honduras', 'Nicaragua', 'El Salvador', 'Belize'],
+        'Amérique du Sud': ['Brésil', 'Argentine', 'Chili', 'Colombie', 'Pérou', 'Équateur', 'Venezuela', 'Bolivie', 'Paraguay', 'Uruguay'],
+        'Asie': ['Chine', 'Japon', 'Inde', 'Corée du Sud', 'Thaïlande', 'Vietnam', 'Indonésie', 'Philippines', 'Malaisie', 'Singapour'],
+        'Afrique': ['Afrique du Sud', 'Nigeria', 'Égypte', 'Maroc', 'Algérie', 'Kenya', 'Ghana', 'Éthiopie', 'Tanzanie', 'Ouganda'],
+        'Océanie': ['Australie', 'Nouvelle-Zélande', 'Papouasie-Nouvelle-Guinée', 'Fidji', 'Samoa', 'Tonga', 'Vanuatu', 'Îles Salomon', 'Kiribati', 'Tuvalu']
+    }
+    
+    for continent, countries in continents.items():
+        if country in countries:
+            return continent
+    
+    # Par défaut, si le pays n'est pas trouvé
+    return "Autre"
+
+# Route pour remplacer votre route "/graphique" existante
+@app.route('/graphique')
+def graphique():
+    return render_template('graphiques.html')
+
+# Route pour récupérer la liste des pays
+@app.route('/api/countries')
+def get_countries():
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify([]), 500
+    
+    cursor = connection.cursor()
+    cursor.execute("SELECT DISTINCT location FROM monkeypox_data ORDER BY location")
+    countries = [row[0] for row in cursor.fetchall()]
+    
+    # Éliminer les doublons potentiels
+    unique_countries = list(set(countries))
+    unique_countries.sort()
+    
+    cursor.close()
+    connection.close()
+    
+    return jsonify(unique_countries)
+
+# Route pour les données du graphique camembert
+@app.route('/api/pie-data')
+def get_pie_data():
+    metric = request.args.get('metric', 'total_cases')
+    view_type = request.args.get('view_type', 'continent')
+    
+    # S'assurer que la métrique est valide pour éviter les injections SQL
+    valid_metrics = ['total_cases', 'total_deaths', 'cases_per_million']
+    if metric not in valid_metrics:
+        metric = 'total_cases'  # Métrique par défaut
+    
+    # Utiliser la métrique dans la colonne appropriée
+    metric_column = metric
+    if metric == 'cases_per_million':
+        metric_column = 'total_cases_per_million'
+    
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"labels": [], "values": []}), 500
+    
+    cursor = connection.cursor(dictionary=True)
+    
+    if view_type == 'continent':
+        # Récupérer les données les plus récentes pour chaque pays
+        query = f"""
+        SELECT t1.location, t1.{metric_column}
+        FROM monkeypox_data t1
+        INNER JOIN (
+            SELECT location, MAX(date) as latest_date
+            FROM monkeypox_data
+            GROUP BY location
+        ) t2 ON t1.location = t2.location AND t1.date = t2.latest_date
+        WHERE t1.{metric_column} IS NOT NULL
+        """
+        
+        cursor.execute(query)
+        data = cursor.fetchall()
+        
+        # Dictionnaire pour stocker la correspondance pays -> continent
+        country_to_continent = {}
+        
+        # Regrouper par continent avec nettoyage des noms
+        continent_data = {}
+        for row in data:
+            country = row['location'].strip()  # Supprimer les espaces superflus
+            value = float(row[metric_column] or 0)
+            
+            # Ignorer les entrées comme "World" ou "North America" qui ne sont pas des pays
+            if country.lower() in ['world', 'global', 'international']:
+                continue
+                
+            # Filtrer les entrées qui sont déjà des continents
+            if country.lower() in ['north america', 'south america', 'europe', 'asia', 'africa', 'oceania']:
+                continue
+            
+            # Déterminer le continent
+            continent = get_continent(country)
+            
+            # Stocker la correspondance pays -> continent
+            country_to_continent[country] = continent
+            
+            if continent in continent_data:
+                continent_data[continent] += value
+            else:
+                continent_data[continent] = value
+        
+        # Convertir en listes pour le graphique
+        labels = list(continent_data.keys())
+        values = list(continent_data.values())
+        
+    else:  # top-countries
+        # Récupérer tous les pays (pas les continents ou régions comme "World")
+        query = f"""
+        SELECT t1.location, t1.{metric_column}
+        FROM monkeypox_data t1
+        INNER JOIN (
+            SELECT location, MAX(date) as latest_date
+            FROM monkeypox_data
+            GROUP BY location
+        ) t2 ON t1.location = t2.location AND t1.date = t2.latest_date
+        WHERE t1.{metric_column} IS NOT NULL
+        """
+        
+        cursor.execute(query)
+        all_data = cursor.fetchall()
+        
+        # Nettoyer et dédupliquer les données
+        country_data = {}
+        
+        for row in all_data:
+            # Nettoyer le nom du pays
+            country = row['location'].strip()
+            value = float(row[metric_column] or 0)
+            
+            # Ignorer les entrées comme "World" ou "North America" qui ne sont pas des pays
+            if country.lower() in ['world', 'global', 'international', 
+                               'north america', 'south america', 'europe', 
+                               'asia', 'africa', 'oceania']:
+                continue
+            
+            # Normaliser certains noms de pays qui pourraient avoir des variations
+            lower_country = country.lower()
+            if 'united states' in lower_country or 'usa' in lower_country or 'u.s.a' in lower_country:
+                country = 'United States'
+            elif 'united kingdom' in lower_country or 'uk' in lower_country or 'u.k' in lower_country:
+                country = 'United Kingdom'
+            elif 'france' in lower_country:
+                country = 'France'
+            
+            # Agréger les valeurs par pays normalisé
+            if country in country_data:
+                country_data[country] += value
+            else:
+                country_data[country] = value
+        
+        # Trier par valeur et prendre les 5 premiers
+        sorted_countries = sorted(country_data.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        labels = [country for country, _ in sorted_countries]
+        values = [value for _, value in sorted_countries]
+    
+    cursor.close()
+    connection.close()
+    
+    return jsonify({"labels": labels, "values": values})
+
+# Route pour les données du graphique linéaire
+@app.route('/api/line-data')
+def get_line_data():
+    data_type = request.args.get('data_type', 'total_cases')
+    time_range = request.args.get('time_range', '1y')
+    location = request.args.get('location', 'all')
+    
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"dates": [], "datasets": []}), 500
+    
+    cursor = connection.cursor(dictionary=True)
+    
+    # Déterminer la date de début en fonction de la plage de temps
+    start_date = None
+    now = datetime.now()
+    
+    if time_range == '3m':
+        start_date = now - timedelta(days=90)
+    elif time_range == '6m':
+        start_date = now - timedelta(days=180)
+    elif time_range == '1y':
+        start_date = now - timedelta(days=365)
+    elif time_range == '2022':
+        start_date = datetime(2022, 1, 1)
+    # Sinon, toutes les données disponibles
+    
+    # Construire la condition de date
+    date_condition = ""
+    if start_date:
+        date_condition = f"WHERE date >= '{start_date.strftime('%Y-%m-%d')}'"
+    
+    # Préparer les données
+    if location == 'all':
+        # Données mondiales
+        query = f"""
+        SELECT date, SUM({data_type}) as value
+        FROM monkeypox_data
+        {date_condition}
+        GROUP BY date
+        ORDER BY date
+        """
+        
+        cursor.execute(query)
+        data = cursor.fetchall()
+        
+        dates = [row['date'].strftime('%Y-%m-%d') for row in data]
+        values = [float(row['value'] or 0) for row in data]
+        
+        datasets = [{
+            'label': 'Monde',
+            'data': values
+        }]
+        
+    elif location == 'top5':
+        # Top 5 des pays les plus touchés
+        # D'abord, identifier les 5 pays avec le plus de cas
+        top_query = f"""
+        SELECT location, MAX({data_type}) as max_value
+        FROM monkeypox_data
+        GROUP BY location
+        ORDER BY max_value DESC
+        LIMIT 5
+        """
+        
+        cursor.execute(top_query)
+        top_countries = [row['location'] for row in cursor.fetchall()]
+        
+        # Ensuite, récupérer les données temporelles pour chaque pays
+        datasets = []
+        
+        for country in top_countries:
+            query = f"""
+            SELECT date, {data_type} as value
+            FROM monkeypox_data
+            WHERE location = %s {' AND ' + date_condition.replace('WHERE', '') if date_condition else ''}
+            ORDER BY date
+            """
+            
+            cursor.execute(query, (country,))
+            country_data = cursor.fetchall()
+            
+            if country_data:
+                dates = [row['date'].strftime('%Y-%m-%d') for row in country_data]
+                values = [float(row['value'] or 0) for row in country_data]
+                
+                datasets.append({
+                    'label': country,
+                    'data': values
+                })
+        
+    else:  # 'continent'
+        # Données par continent
+        # Récupérer tous les pays et leurs données
+        query = f"""
+        SELECT location, date, {data_type} as value
+        FROM monkeypox_data
+        {date_condition}
+        ORDER BY date, location
+        """
+        
+        cursor.execute(query)
+        all_data = cursor.fetchall()
+        
+        # Regrouper par continent et par date
+        continent_data = {}
+        dates_set = set()
+        
+        for row in all_data:
+            country = row['location']
+            date = row['date'].strftime('%Y-%m-%d')
+            value = float(row['value'] or 0)
+            
+            # Déterminer le continent
+            continent = get_continent(country)
+            
+            dates_set.add(date)
+            
+            if continent not in continent_data:
+                continent_data[continent] = {}
+                
+            if date in continent_data[continent]:
+                continent_data[continent][date] += value
+            else:
+                continent_data[continent][date] = value
+        
+        # Convertir en format pour Chart.js
+        dates = sorted(list(dates_set))
+        datasets = []
+        
+        for continent, data in continent_data.items():
+            values = [data.get(date, 0) for date in dates]
+            
+            datasets.append({
+                'label': continent,
+                'data': values
+            })
+    
+    cursor.close()
+    connection.close()
+    
+    return jsonify({"dates": dates, "datasets": datasets})
+
+# Route pour les données du graphique à barres
+@app.route('/api/bar-data')
+def get_bar_data():
+    comparison = request.args.get('comparison', 'cases_deaths')
+    region = request.args.get('region', 'all')
+    count = int(request.args.get('count', 5))
+    
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"labels": [], "datasets": []}), 500
+    
+    cursor = connection.cursor(dictionary=True)
+    
+    # Filtrer par région si nécessaire
+    region_condition = ""
+    if region != 'all':
+        # Récupérer les pays de la région
+        region_countries = []
+        if region == 'europe':
+            region_countries = ['Royaume-Uni', 'Espagne', 'France', 'Allemagne', 'Italie', 'Portugal', 'Pays-Bas', 'Belgique', 'Suisse', 'Suède', 'Norvège']
+        elif region == 'north_america':
+            region_countries = ['États-Unis', 'Canada', 'Mexique']
+        elif region == 'south_america':
+            region_countries = ['Brésil', 'Argentine', 'Chili', 'Colombie', 'Pérou']
+        elif region == 'asia':
+            region_countries = ['Chine', 'Japon', 'Inde', 'Corée du Sud', 'Thaïlande']
+        elif region == 'africa':
+            region_countries = ['Afrique du Sud', 'Nigeria', 'Égypte', 'Maroc', 'Algérie']
+        elif region == 'oceania':
+            region_countries = ['Australie', 'Nouvelle-Zélande']
+        
+        # Construire la condition SQL
+        if region_countries:
+            region_condition = f"WHERE location IN ({', '.join(['%s'] * len(region_countries))})"
+    
+    # Récupérer les données en fonction de la comparaison
+    if comparison == 'cases_deaths':
+        # Cas et décès
+        query = f"""
+        SELECT location, MAX(total_cases) as cases, MAX(total_deaths) as deaths
+        FROM monkeypox_data
+        {region_condition}
+        GROUP BY location
+        ORDER BY cases DESC
+        LIMIT %s
+        """
+        
+        params = []
+        if region_countries:
+            params.extend(region_countries)
+        params.append(count)
+        
+        cursor.execute(query, tuple(params))
+        data = cursor.fetchall()
+        
+        countries = [row['location'] for row in data]
+        cases = [float(row['cases'] or 0) for row in data]
+        deaths = [float(row['deaths'] or 0) for row in data]
+        
+        datasets = [
+            {
+                'label': 'Total des cas',
+                'data': cases
+            },
+            {
+                'label': 'Total des décès',
+                'data': deaths
+            }
+        ]
+        
+    elif comparison == 'per_million':
+        # Cas par million d'habitants
+        query = f"""
+        SELECT location, MAX(total_cases_per_million) as cases_per_million
+        FROM monkeypox_data
+        {region_condition}
+        GROUP BY location
+        ORDER BY cases_per_million DESC
+        LIMIT %s
+        """
+        
+        params = []
+        if region_countries:
+            params.extend(region_countries)
+        params.append(count)
+        
+        cursor.execute(query, tuple(params))
+        data = cursor.fetchall()
+        
+        countries = [row['location'] for row in data]
+        values = [float(row['cases_per_million'] or 0) for row in data]
+        
+        datasets = [
+            {
+                'label': 'Cas par million d\'habitants',
+                'data': values
+            }
+        ]
+        
+    else:  # growth_rate
+        # Taux de croissance
+        # Calculer le taux de croissance comme la différence entre le dernier jour et 7 jours avant
+        query = f"""
+        SELECT t1.location, 
+               (t1.total_cases - t2.total_cases) / t2.total_cases * 100 as growth_rate
+        FROM 
+            (SELECT location, MAX(date) as latest_date, total_cases
+             FROM monkeypox_data
+             GROUP BY location) t1
+        JOIN 
+            (SELECT location, MAX(date) as week_before_date, total_cases
+             FROM monkeypox_data
+             WHERE date <= DATE_SUB((SELECT MAX(date) FROM monkeypox_data), INTERVAL 7 DAY)
+             GROUP BY location) t2
+        ON t1.location = t2.location
+        {region_condition.replace('WHERE', 'AND') if region_condition else ''}
+        WHERE t2.total_cases > 0
+        ORDER BY growth_rate DESC
+        LIMIT %s
+        """
+        
+        params = []
+        if region_countries:
+            params.extend(region_countries)
+        params.append(count)
+        
+        cursor.execute(query, tuple(params))
+        data = cursor.fetchall()
+        
+        countries = [row['location'] for row in data]
+        values = [float(row['growth_rate'] or 0) for row in data]
+        
+        datasets = [
+            {
+                'label': 'Taux de croissance hebdomadaire (%)',
+                'data': values
+            }
+        ]
+    
+    cursor.close()
+    connection.close()
+    
+    return jsonify({"labels": countries, "datasets": datasets})
 
 if __name__ == '__main__':
     if not os.path.exists("uploads"):
