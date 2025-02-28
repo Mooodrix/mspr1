@@ -209,34 +209,27 @@
             box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
         }
         .sidebar .mt-auto {
-    margin-bottom: 20px; /* Ajoute une marge en bas pour remonter les boutons */
-    padding: 0 15px; /* Ajoute un peu de padding sur les côtés pour l'esthétique */
-}
+            margin-bottom: 20px; /* Ajoute une marge en bas pour remonter les boutons */
+            padding: 0 15px; /* Ajoute un peu de padding sur les côtés pour l'esthétique */
+        }
 
-.sidebar .btn {
-    margin-bottom: 10px; /* Espacement entre les boutons */
-    width: 100%; /* Assure que les boutons prennent toute la largeur */
-    text-align: left; /* Alignement du texte à gauche */
-    padding: 10px 15px; /* Padding intérieur pour un meilleur confort visuel */
-    border-radius: 8px; /* Bordures arrondies */
-    transition: all 0.3s ease; /* Transition fluide */
-}
+        .sidebar .btn {
+            margin-bottom: 10px; /* Espacement entre les boutons */
+            width: 100%; /* Assure que les boutons prennent toute la largeur */
+            text-align: left; /* Alignement du texte à gauche */
+            padding: 10px 15px; /* Padding intérieur pour un meilleur confort visuel */
+            border-radius: 8px; /* Bordures arrondies */
+            transition: all 0.3s ease; /* Transition fluide */
+        }
 
-.sidebar .btn:hover {
-    transform: translateY(-2px); /* Effet de survol */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Ombre portée au survol */
-}
+        .sidebar .btn:hover {
+            transform: translateY(-2px); /* Effet de survol */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Ombre portée au survol */
+        }
     </style>
 </head>
 <body>
-<!-- Affichage du message de succès -->
-{% if success_message %}
-    <div class="alert alert-success">
-        {{ success_message }}
-    </div>
-{% endif %}
-
-<!-- Barre de navigation verticale -->
+<!-- Barre de navigation verticale améliorée -->
 <div class="sidebar d-flex flex-column p-3 bg-light vh-100">
     <!-- Titre de la page en tant que bouton -->
     <a href="/" class="btn btn-primary w-100 fw-bold text-start">
@@ -248,7 +241,7 @@
         <a href="/" class="btn btn-outline-dark w-100 text-start mb-2">🏠 Accueil</a>
         <a href="/tableau" class="btn btn-outline-dark w-100 text-start mb-2">📊 Tableau</a>
         <a href="/graphique" class="btn btn-outline-dark w-100 text-start mb-2">📈 Graphique</a>
-        <a href="/world-map" class="btn btn-dark w-100 text-start">🌎 Carte mondiale</a>
+        <a href="/world-map" class="btn btn-outline-dark w-100 text-start">Carte du Monde</a>
     </nav>
 
     <!-- Boutons en bas -->
@@ -257,55 +250,52 @@
         <a href="/importCSV" class="btn btn-success w-100">📂 Importer CSV</a>
     </div>
 </div>
+<!-- Contenu principal -->
+<div class="content">
+    <h2>Modifier</h2>
 
-    <!-- Contenu principal -->
-    <div class="content">
-        <h2 class="text-center mb-5">📊 Données Monkeypox</h2>
-        
-        <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
-            <a href="/?sort_by=location&order=asc" class="btn btn-outline-secondary">📍 Pays (A-Z)</a>
-            <a href="/?sort_by=location&order=desc" class="btn btn-outline-secondary">📍 Pays (Z-A)</a>
-            <a href="/?sort_by=date&order=desc" class="btn btn-outline-secondary">📆 Date (récent)</a>
-            <a href="/?sort_by=date&order=asc" class="btn btn-outline-secondary">📆 Date (ancien)</a>
-            <a href="/?sort_by=total_cases&order=asc" class="btn btn-outline-secondary">🦠 Cas (min)</a>
-            <a href="/?sort_by=total_cases&order=desc" class="btn btn-outline-secondary">🦠 Cas (max)</a>
-            <a href="/?sort_by=total_cases&order=desc" class="btn btn-outline-secondary">🔄 Réinitialiser</a>
+    <!-- Affichage du message de succès -->
+    {% if success_message %}
+        <div class="alert alert-success">
+            {{ success_message }}
+        </div>
+    {% endif %}
+
+    <!-- Formulaire de modification -->
+    <form method="POST">
+        <div class="mb-3">
+            <label for="location" class="form-label">Lieu</label>
+            <input type="text" class="form-control" id="location" name="location" value="{{ row.location }}" required>
         </div>
 
-        <!-- Tableau des données -->
-        <table id="dataTable" class="table table-bordered table-striped bg-white shadow-sm">
-            <thead class="table-dark">
-                <tr>
-                    <th>Lieu</th>
-                    <th>Code ISO</th>
-                    <th>Date</th>
-                    <th>Total Cas</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in data %}
-                <tr>
-                    <td>{{ row.location }}</td>
-                    <td>{{ row.iso_code }}</td>
-                    <td>{{ row.date }}</td>
-                    <td>{{ row.total_cases }}</td>
-                    <td class="d-flex gap-1">
-                        <a href="/edit/{{ row.id }}" class="btn btn-warning btn-sm">✏️ Modifier</a>
-                        <a href="/delete/{{ row.id }}" class="btn btn-danger btn-sm">🗑 Supprimer</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        
-        <!-- Pagination -->
-        <nav aria-label="Pagination" class="d-flex justify-content-between align-items-center mt-4">
-            <a href="?sort_by={{ sort_by }}&order={{ order }}&page={{ page - 1 }}" class="btn btn-outline-primary {% if page <= 1 %}disabled{% endif %}">⬅️ Précédent</a>
-            <span>Page {{ page }} sur {{ total_pages }}</span>
-            <a href="?sort_by={{ sort_by }}&order={{ order }}&page={{ page + 1 }}" class="btn btn-outline-primary {% if page >= total_pages %}disabled{% endif %}">Suivant ➡️</a>
-        </nav>
-    </div>
+        <div class="mb-3">
+            <label for="iso_code" class="form-label">Code ISO</label>
+            <input type="text" class="form-control" id="iso_code" name="iso_code" value="{{ row.iso_code }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="date" class="form-label">Date</label>
+            <input type="date" class="form-control" id="date" name="date" value="{{ row.date }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="total_cases" class="form-label">Total des cas</label>
+            <input type="number" class="form-control" id="total_cases" name="total_cases" value="{{ row.total_cases }}" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Modifier</button>
+    </form>
+
+    <a href="/tableau" class="btn btn-secondary mt-3">Retourner au tableau</a>
+
+    <!-- Pagination -->
+    <nav aria-label="Pagination" class="d-flex justify-content-between align-items-center mt-4">
+        <a href="?sort_by={{ sort_by }}&order={{ order }}&page={{ page - 1 }}" class="btn btn-outline-primary {% if page <= 1 %}disabled{% endif %}">⬅️ Précédent</a>
+        <span>Page {{ page }} sur {{ total_pages }}</span>
+        <a href="?sort_by={{ sort_by }}&order={{ order }}&page={{ page + 1 }}" class="btn btn-outline-primary {% if page >= total_pages %}disabled{% endif %}">Suivant ➡️</a>
+    </nav>
+</div>
 
 </body>
 </html>
+    
