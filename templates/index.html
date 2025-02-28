@@ -12,23 +12,16 @@
         }
         .sidebar {
         width: 250px;
-        height: 100vh;
         position: fixed;
-        left: 0;
-        top: 0;
-        background: #343a40;
-        padding-top: 20px;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
         }
-        .sidebar a {
-            color: white;
-            padding: 10px 20px;
-            display: block;
-            text-decoration: none;
-            text-align: center;
-            margin-bottom: 10px;
+        .sidebar nav a {
+            transition: 0.3s;
         }
-        .sidebar a:hover {
-            background: #495057;
+        .sidebar nav a:hover {
+            background-color: #f8f9fa;
         }
         .content {
             margin-left: 270px;
@@ -43,17 +36,26 @@
 </head>
 <body>
 
-    <!-- Barre de navigation verticale -->
-    <div class="sidebar">
-        <button class="btn btn-secondary w-100 mb-4 btn-no-shadow">MonkeyPox</button>
-        <a href="/">🏠 Accueil</a>
-        <a href="/tableau">📈 Tableau</a>
-        <a href="/graphique">📈 Graphique</a>
-        <div class="bottom-buttons">
-            <a href="/ajout" class="btn btn-primary w-100">➕ Ajouter</a>
-            <a href="/importCSV" class="btn btn-success w-100 mt-2">📂 Importer CSV</a>
-        </div>
+    <!-- Barre de navigation verticale améliorée -->
+<div class="sidebar d-flex flex-column p-3 bg-light vh-100">
+    <!-- Titre de la page en tant que bouton -->
+    <a href="/" class="btn btn-primary w-100 fw-bold text-start">
+        🐒 Monkeypox
+    </a>
+
+    <!-- Liens de navigation -->
+    <nav class="mt-3">
+        <a href="/" class="btn btn-outline-dark w-100 text-start mb-2">🏠 Accueil</a>
+        <a href="/tableau" class="btn btn-outline-dark w-100 text-start mb-2">📊 Tableau</a>
+        <a href="/graphique" class="btn btn-outline-dark w-100 text-start">📈 Graphique</a>
+    </nav>
+
+    <!-- Boutons en bas -->
+    <div class="mt-auto">
+        <a href="/ajout" class="btn btn-primary w-100 mb-2">➕ Ajouter</a>
+        <a href="/importCSV" class="btn btn-success w-100">📂 Importer CSV</a>
     </div>
+</div>
 
     <!-- Contenu principal -->
     <div class="content">
