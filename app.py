@@ -4,7 +4,8 @@ import pandas as pd
 import os
 import random
 from flask_paginate import Pagination, get_page_parameter
-
+import json
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "uploads"
@@ -134,6 +135,105 @@ def graphique():
     # Rendre la page avec les données
     return render_template('graphique.html', labels=labels, cases=cases)
 
+@app.route('/world-map')
+def world_map():
+    # Obtenir les paramètres de filtre depuis l'URL
+    country = request.args.get('country', 'all')
+    date_range = request.args.get('date_range', 'all')
+    data_type = request.args.get('data_type', 'total_cases')
+    
+    # Établir une connexion à la base de données
+    connection = get_db_connection()
+    if connection is None:
+        return "⚠️ Erreur de connexion à la base de données", 500
+
+    cursor = connection.cursor(dictionary=True)
+    
+    # Récupérer la liste des pays uniques
+    cursor.execute("SELECT DISTINCT location FROM monkeypox_data ORDER BY location;")
+    countries = [row['location'] for row in cursor.fetchall()]
+    
+    # Construire les conditions de filtrage
+    conditions = []
+    params = []
+    
+    if country != 'all':
+        conditions.append("location = %s")
+        params.append(country)
+    
+    # Gérer les filtres de date
+    if date_range != 'all':
+        today = datetime.now()
+        if date_range == 'last-week':
+            start_date = today - timedelta(days=7)
+        elif date_range == 'last-month':
+            start_date = today - timedelta(days=30)
+        elif date_range == 'last-year':
+            start_date = today - timedelta(days=365)
+        
+        conditions.append("date >= %s")
+        params.append(start_date.strftime('%Y-%m-%d'))
+    
+    # Construire la requête SQL
+    query = "SELECT * FROM monkeypox_data"
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    
+    cursor.execute(query, params)
+    all_data = cursor.fetchall()
+    
+    # Regrouper les données par pays et obtenir l'entrée la plus récente pour chaque pays
+    countries_latest_data = {}
+    for row in all_data:
+        country_name = row['location']
+        date = row['date']
+        
+        # Si ce pays n'est pas dans notre dictionnaire ou si cette entrée est plus récente, mettre à jour
+        if country_name not in countries_latest_data or date > countries_latest_data[country_name]['date']:
+            countries_latest_data[country_name] = row
+    
+    # Maintenant, convertir au format nécessaire pour la carte
+    # Utiliser le nom du pays comme clé au lieu du code ISO
+    countries_data = {}
+    
+    for country_name, row in countries_latest_data.items():
+        iso = row['iso_code']
+        # Créer une entrée avec le nom du pays
+        countries_data[iso if iso else f"country_{len(countries_data)}"] = {
+            'total_cases': row['total_cases'] or 0,
+            'total_deaths': row['total_deaths'] or 0,
+            'new_cases': row['new_cases'] or 0,
+            'new_deaths': row['new_deaths'] or 0,
+            'date': row['date'].strftime('%Y-%m-%d') if isinstance(row['date'], datetime) else str(row['date']),
+            'country_name': country_name
+        }
+    
+    # Calculer les statistiques basées sur les données filtrées
+    total_cases = sum(row['total_cases'] or 0 for row in countries_latest_data.values())
+    total_deaths = sum(row['total_deaths'] or 0 for row in countries_latest_data.values())
+    
+    # Trouver la date de mise à jour la plus récente
+    dates = [row['date'] for row in countries_latest_data.values() if row['date']]
+    last_update = max(dates) if dates else datetime.now()
+    
+    # Formater la date
+    last_update_formatted = last_update.strftime('%d/%m/%Y') if isinstance(last_update, datetime) else str(last_update)
+    
+    # Préparer les statistiques
+    stats = {
+        'total_cases': "{:,}".format(int(total_cases)).replace(',', ' '),
+        'total_deaths': "{:,}".format(int(total_deaths)).replace(',', ' '),
+        'countries_count': len(countries_data),
+        'last_update': last_update_formatted
+    }
+    
+    cursor.close()
+    connection.close()
+    
+    return render_template('world-map.html', 
+                         countries=countries,
+                         countries_data=json.dumps(countries_data),
+                         stats=stats)
 
 if __name__ == '__main__':
     if not os.path.exists("uploads"):

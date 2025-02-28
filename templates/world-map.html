@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Données Monkeypox - Carte Mondiale</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            width: 250px;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar nav a {
+            transition: 0.3s;
+        }
+        .sidebar nav a:hover {
+            background-color: #f8f9fa;
+        }
+        .content {
+            margin-left: 270px;
+            padding: 20px;
+        }
+        .map-container {
+            height: 500px;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        .filter-panel {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .info-box {
+            padding: 8px 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        }
+        .legend {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            line-height: 1.5;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Barre de navigation verticale -->
+<div class="sidebar d-flex flex-column p-3 bg-light vh-100">
+    <!-- Titre de la page en tant que bouton -->
+    <a href="/" class="btn btn-primary w-100 fw-bold text-start">
+        🐒 Monkeypox
+    </a>
+
+    <!-- Liens de navigation -->
+    <nav class="mt-3">
+        <a href="/" class="btn btn-outline-dark w-100 text-start mb-2">🏠 Accueil</a>
+        <a href="/tableau" class="btn btn-outline-dark w-100 text-start mb-2">📊 Tableau</a>
+        <a href="/graphique" class="btn btn-outline-dark w-100 text-start mb-2">📈 Graphique</a>
+        <a href="/world-map" class="btn btn-dark w-100 text-start">🌎 Carte mondiale</a>
+    </nav>
+
+    <!-- Boutons en bas -->
+    <div class="mt-auto">
+        <a href="/ajout" class="btn btn-primary w-100 mb-2">➕ Ajouter</a>
+        <a href="/importCSV" class="btn btn-success w-100">📂 Importer CSV</a>
+    </div>
+</div>
+
+<!-- Contenu principal -->
+<div class="content">
+    <h2 class="text-center mb-4">🌎 Carte mondiale des cas de Monkeypox</h2>
+    
+    <!-- Panneau de filtres -->
+    <div class="filter-panel mb-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="country-select" class="form-label">Filtrer par pays</label>
+                <select id="country-select" class="form-select">
+                    <option value="all" selected>Tous les pays</option>
+                    {% for country in countries %}
+                    <option value="{{ country }}">{{ country }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="date-range" class="form-label">Plage de dates</label>
+                <select id="date-range" class="form-select">
+                    <option value="all">Toutes les dates</option>
+                    <option value="last-week">Dernière semaine</option>
+                    <option value="last-month">Dernier mois</option>
+                    <option value="last-year">Dernière année</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="data-type" class="form-label">Type de données</label>
+                <select id="data-type" class="form-select">
+                    <option value="total_cases">Total des cas</option>
+                    <option value="new_cases">Nouveaux cas</option>
+                    <option value="total_deaths">Total des décès</option>
+                    <option value="new_deaths">Nouveaux décès</option>
+                </select>
+            </div>
+            <div class="col-12 mt-3">
+                <button id="apply-filters" class="btn btn-primary">Appliquer les filtres</button>
+                <button id="reset-filters" class="btn btn-outline-secondary ms-2">Réinitialiser</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Conteneur de carte -->
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+    
+    <!-- Statistiques globales -->
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Statistiques globales</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6 class="card-title">Total des cas</h6>
+                            <h3 id="total-cases" class="text-primary">{{ stats.total_cases }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6 class="card-title">Total des décès</h6>
+                            <h3 id="total-deaths" class="text-danger">{{ stats.total_deaths }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6 class="card-title">Pays affectés</h6>
+                            <h3 id="affected-countries" class="text-success">{{ stats.countries_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6 class="card-title">Dernière mise à jour</h6>
+                            <h3 id="last-update" class="text-info">{{ stats.last_update }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialisation de la carte
+    var map = L.map('map').setView([20, 0], 2);
+    
+    // Ajout du fond de carte OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    // Données récupérées depuis Flask (JSON)
+    var countriesData = {{ countries_data|safe }};
+    
+    // Table de correspondance des noms de pays
+    var countryNameToData = {};
+    
+    // Créer une table de correspondance par nom de pays
+    for (var iso in countriesData) {
+        if (countriesData[iso].country_name) {
+            countryNameToData[countriesData[iso].country_name.toLowerCase()] = countriesData[iso];
+        }
+    }
+    
+    // Styles pour les pays
+    function getColor(d) {
+        return d > 1000 ? '#800026' :
+               d > 500  ? '#BD0026' :
+               d > 200  ? '#E31A1C' :
+               d > 100  ? '#FC4E2A' :
+               d > 50   ? '#FD8D3C' :
+               d > 20   ? '#FEB24C' :
+               d > 10   ? '#FED976' :
+                          '#FFEDA0';
+    }
+    
+    // Style pour les pays sur la carte
+    function style(feature) {
+        var countryName = feature.properties.name;
+        
+        // Chercher les données par nom de pays au lieu de code ISO
+        var countryData = countryNameToData[countryName.toLowerCase()];
+        
+        if (!countryData) {
+            // Essayer avec des variations de nom
+            for (var name in countryNameToData) {
+                if (name.indexOf(countryName.toLowerCase()) >= 0 || 
+                    countryName.toLowerCase().indexOf(name) >= 0) {
+                    countryData = countryNameToData[name];
+                    break;
+                }
+            }
+        }
+        
+        var cases = countryData ? countryData.total_cases : 0;
+        
+        return {
+            fillColor: getColor(cases),
+            weight: 1,
+            opacity: 1,
+            color: 'white',
+            dashArray: '3',
+            fillOpacity: 0.7
+        };
+    }
+    
+    // Info box pour les détails au survol
+    var info = L.control();
+    
+    info.onAdd = function (map) {
+        this._div = L.DomUtil.create('div', 'info-box');
+        this.update();
+        return this._div;
+    };
+    
+    info.update = function (props) {
+        this._div.innerHTML = '<h5>Informations sur le pays</h5>';
+        
+        if (props) {
+            var countryName = props.name;
+            
+            // Chercher par nom de pays
+            var countryData = countryNameToData[countryName.toLowerCase()];
+            
+            if (!countryData) {
+                // Essayer avec des variations de nom
+                for (var name in countryNameToData) {
+                    if (name.indexOf(countryName.toLowerCase()) >= 0 || 
+                        countryName.toLowerCase().indexOf(name) >= 0) {
+                        countryData = countryNameToData[name];
+                        break;
+                    }
+                }
+            }
+            
+            this._div.innerHTML += '<b>' + countryName + '</b><br />';
+            
+            if (countryData) {
+                this._div.innerHTML += 
+                    'Total des cas: ' + (countryData.total_cases || 0) + '<br />' +
+                    'Total des décès: ' + (countryData.total_deaths || 0) + '<br />' +
+                    'Dernière mise à jour: ' + countryData.date;
+            } else {
+                this._div.innerHTML += 'Aucune donnée disponible pour ce pays';
+            }
+        } else {
+            this._div.innerHTML += 'Survolez un pays';
+        }
+    };
+    
+    info.addTo(map);
+    
+    // Interaction au survol
+    function highlightFeature(e) {
+        var layer = e.target;
+        
+        layer.setStyle({
+            weight: 2,
+            color: '#666',
+            dashArray: '',
+            fillOpacity: 0.9
+        });
+        
+        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+            layer.bringToFront();
+        }
+        
+        info.update(layer.feature.properties);
+    }
+    
+    // Réinitialisation de l'interaction
+    function resetHighlight(e) {
+        geojsonLayer.resetStyle(e.target);
+        info.update();
+    }
+    
+    // Zoom sur le pays cliqué
+    function zoomToFeature(e) {
+        map.fitBounds(e.target.getBounds());
+        
+        // Sélectionner le pays dans le filtre
+        var countryName = e.target.feature.properties.name;
+        var selectElement = document.getElementById('country-select');
+        
+        // Trouver l'option correspondante
+        for (var i = 0; i < selectElement.options.length; i++) {
+            if (selectElement.options[i].text.toLowerCase() === countryName.toLowerCase()) {
+                selectElement.selectedIndex = i;
+                break;
+            }
+        }
+    }
+    
+    // Attacher les événements à chaque feature
+    function onEachFeature(feature, layer) {
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: resetHighlight,
+            click: zoomToFeature
+        });
+    }
+    
+    // Charger les données GeoJSON des pays
+    var geojsonLayer;
+    fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+        .then(response => response.json())
+        .then(data => {
+            geojsonLayer = L.geoJson(data, {
+                style: style,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+        })
+        .catch(error => {
+            console.error("Erreur lors du chargement des données GeoJSON:", error);
+        });
+    
+    // Légende
+    var legend = L.control({position: 'bottomright'});
+    
+    legend.onAdd = function (map) {
+        var div = L.DomUtil.create('div', 'legend');
+        var grades = [0, 10, 20, 50, 100, 200, 500, 1000];
+        
+        div.innerHTML = '<h6>Nombre de cas</h6>';
+        
+        // Boucle à travers nos intervalles et générer une étiquette avec une couleur carrée pour chaque intervalle
+        for (var i = 0; i < grades.length; i++) {
+            div.innerHTML +=
+                '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+                grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+        }
+        
+        return div;
+    };
+    
+    legend.addTo(map);
+    
+    // Gestion des filtres
+    document.getElementById('apply-filters').addEventListener('click', function() {
+        var country = document.getElementById('country-select').value;
+        var dateRange = document.getElementById('date-range').value;
+        var dataType = document.getElementById('data-type').value;
+        
+        // Créer l'URL avec les paramètres
+        window.location.href = `/world-map?country=${country}&date_range=${dateRange}&data_type=${dataType}`;
+    });
+    
+    // Réinitialiser les filtres
+    document.getElementById('reset-filters').addEventListener('click', function() {
+        document.getElementById('country-select').value = 'all';
+        document.getElementById('date-range').value = 'all';
+        document.getElementById('data-type').value = 'total_cases';
+        window.location.href = '/world-map';
+    });
+</script>
+</body>
+</html>
