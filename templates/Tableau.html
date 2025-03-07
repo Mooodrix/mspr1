@@ -263,17 +263,17 @@
     <!-- Contenu principal -->
     <div class="content">
         <h2 class="text-center mb-5">📊 Données Monkeypox</h2>
-        
         <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
-            <a href="/?sort_by=location&order=asc" class="btn btn-outline-secondary">📍 Pays (A-Z)</a>
-            <a href="/?sort_by=location&order=desc" class="btn btn-outline-secondary">📍 Pays (Z-A)</a>
-            <a href="/?sort_by=date&order=desc" class="btn btn-outline-secondary">📆 Date (récent)</a>
-            <a href="/?sort_by=date&order=asc" class="btn btn-outline-secondary">📆 Date (ancien)</a>
-            <a href="/?sort_by=total_cases&order=asc" class="btn btn-outline-secondary">🦠 Cas (min)</a>
-            <a href="/?sort_by=total_cases&order=desc" class="btn btn-outline-secondary">🦠 Cas (max)</a>
-            <a href="/?sort_by=total_cases&order=desc" class="btn btn-outline-secondary">🔄 Réinitialiser</a>
+            <a href="/tableau?sort_by=location&order=asc" class="btn btn-outline-secondary">📍 Pays (A-Z)</a>
+            <a href="/tableau?sort_by=location&order=desc" class="btn btn-outline-secondary">📍 Pays (Z-A)</a>
+            <a href="/tableau?sort_by=date&order=desc" class="btn btn-outline-secondary">📆 Date (récent)</a>
+            <a href="/tableau?sort_by=date&order=asc" class="btn btn-outline-secondary">📆 Date (ancien)</a>
+            <a href="/tableau?sort_by=total_cases&order=asc" class="btn btn-outline-secondary">🦠 Cas (min)</a>
+            <a href="/tableau?sort_by=total_cases&order=desc" class="btn btn-outline-secondary">🦠 Cas (max)</a>
+            <a href="/tableau" class="btn btn-outline-secondary">🔄 Réinitialiser</a>
         </div>
-
+        
+        
         <!-- Tableau des données -->
         <table id="dataTable" class="table table-bordered table-striped bg-white shadow-sm">
             <thead class="table-dark">

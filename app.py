@@ -47,7 +47,6 @@ def index():
 
 @app.route('/tableau', methods=['GET'])
 def tableau():
-    # Connexion à la base de données
     connection = get_db_connection()
     if connection is None:
         return "⚠️ Erreur de connexion à la base de données", 500
@@ -63,25 +62,33 @@ def tableau():
     results_per_page = 10
     offset = (page - 1) * results_per_page
 
-    # Exécution de la requête avec tri et pagination
-    cursor.execute(f"""
+    conditions = []  # Assurez-vous que conditions est toujours défini
+
+    # Construction de la requête SQL
+    query = f"""
         SELECT * FROM monkeypox_data
+        WHERE location != 'World'
+        {"AND " + " AND ".join(conditions) if conditions else ""}
         ORDER BY {sort_by} {order}
         LIMIT %s OFFSET %s
-    """, (results_per_page, offset))
+    """
 
-    rows = cursor.fetchall()
 
-    # Récupérer le nombre total d'entrées pour calculer le nombre total de pages
-    cursor.execute("SELECT COUNT(*) FROM monkeypox_data")
-    total_rows = cursor.fetchone()['COUNT(*)']
-    total_pages = (total_rows // results_per_page) + (1 if total_rows % results_per_page > 0 else 0)
+    params = [results_per_page, offset]
 
-    # Fermer la connexion à la base de données
-    cursor.close()
+    # Exécution de la requête avec tri et pagination
+    cursor.execute(query, params)
+    data = cursor.fetchall()
+
+    # Récupération du nombre total de pages
+    cursor.execute("SELECT COUNT(*) as count FROM monkeypox_data")
+    total_records = cursor.fetchone()['count']
+    total_pages = (total_records + results_per_page - 1) // results_per_page  # Calcul du nombre total de pages
+
     connection.close()
 
-    return render_template('tableau.html', data=rows, page=page, total_pages=total_pages, sort_by=sort_by, order=order)
+    return render_template("tableau.html", data=data, sort_by=sort_by, order=order, page=page, total_pages=total_pages)
+
 
 # Route pour ajouter une nouvelle entrée
 @app.route('/ajout', methods=['GET', 'POST'])
