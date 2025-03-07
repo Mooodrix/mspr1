@@ -356,7 +356,7 @@
     }).addTo(map);
     
     // Données récupérées depuis Flask (JSON)
-    var countriesData = {{ countries_data|safe }};
+    var countriesData = JSON.parse('{{ countries_data|tojson|safe }}');
     
     // Table de correspondance des noms de pays
     var countryNameToData = {};
