@@ -7,6 +7,7 @@ from flask_paginate import Pagination, get_page_parameter
 import json
 from datetime import datetime, timedelta
 from urllib.parse import urlencode
+import logging
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "uploads"
@@ -227,10 +228,73 @@ def edit_entry(id):
         # Rediriger vers la page du tableau avec les mêmes paramètres de tri et de pagination
         return redirect(url_for('tableau', page=page, sort_by=sort_by, order=order))
 
-@app.route('/importCSV')
+import logging
+@app.route('/importCSV', methods=['GET', 'POST'])
 def import_csv():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return "⚠️ Aucun fichier sélectionné", 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return "⚠️ Aucun fichier sélectionné", 400
+
+        if file and file.filename.endswith('.csv'):
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+            file.save(file_path)
+
+            # Lire le fichier CSV
+            df = pd.read_csv(file_path)
+
+            # Vérifier si les colonnes attendues sont présentes
+            if not EXPECTED_COLUMNS.issubset(df.columns):
+                return "⚠️ Le fichier CSV ne contient pas les colonnes attendues", 400
+
+            # Remplacer les valeurs NaN par None
+            df = df.where(pd.notnull(df), None)
+
+            # Se connecter à la base de données
+            connection = get_db_connection()
+            if connection is None:
+                return "⚠️ Erreur de connexion à la base de données", 500
+
+            cursor = connection.cursor()
+
+            # Insérer les données dans la base de données par lots
+            total_rows = len(df)
+            batch_size = 1000
+            for start in range(0, total_rows, batch_size):
+                end = min(start + batch_size, total_rows)
+                batch = df.iloc[start:end]
+                values = [
+                    (
+                        row['location'], row['iso_code'], row['date'], row['total_cases'], row['total_deaths'],
+                        row['new_cases'], row['new_deaths'], row['new_cases_smoothed'], row['new_deaths_smoothed'],
+                        row['new_cases_per_million'], row['total_cases_per_million'], row['new_cases_smoothed_per_million'],
+                        row['new_deaths_per_million'], row['total_deaths_per_million'], row['new_deaths_smoothed_per_million']
+                    )
+                    for _, row in batch.iterrows()
+                ]
+                cursor.executemany("""
+                    INSERT INTO monkeypox_data (location, iso_code, date, total_cases, total_deaths, new_cases, new_deaths, new_cases_smoothed, new_deaths_smoothed, new_cases_per_million, total_cases_per_million, new_cases_smoothed_per_million, new_deaths_per_million, total_deaths_per_million, new_deaths_smoothed_per_million)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, values)
+
+                # Afficher la progression
+                logging.info(f"Progression : {end}/{total_rows} lignes insérées")
+
+            connection.commit()
+            cursor.close()
+            connection.close()
+
+            logging.info("Importation terminée")
+
+            return redirect(url_for('tableau'))
+
     return render_template('importCSV.html')
-    
+
+
+
 # Exemple de données statiques pour le graphique (tu peux les récupérer de ta base de données)
 @app.route('/graphique')
 def graphique():

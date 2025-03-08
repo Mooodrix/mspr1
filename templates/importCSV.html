@@ -256,13 +256,22 @@
     <!-- Contenu principal -->
     <div class="content">
         <h2 class="text-center mb-4">📂 Importer un fichier CSV</h2>
-
-        <!-- Formulaire d'importation CSV -->
-        <form action="/upload" method="POST" enctype="multipart/form-data" class="mt-4 p-3 border rounded bg-white shadow-sm">
-            <div class="input-group">
-                <input type="file" name="file" class="form-control" accept=".csv" required>
-                <button type="submit" class="btn btn-success">📂 Importer CSV</button>
+<!-- Afficher les messages flash -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+        <!-- Formulaire d'importation CSV -->
+        <form action="/importCSV" method="POST" enctype="multipart/form-data">
+            <label for="file">Choisir un fichier CSV:</label>
+            <input type="file" name="file" accept=".csv" required>
+            <button type="submit">Importer</button>
         </form>
 
     </div>
