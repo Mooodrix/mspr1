@@ -133,7 +133,7 @@ def delete_entry(id):
     connection.commit()
     cursor.close()
     connection.close()
-    return redirect(url_for('index'))
+    return redirect(url_for('tableau'))
 
 # Route pour modifier une entrée
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
