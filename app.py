@@ -44,7 +44,6 @@ def get_db_connection():
 def index():
     return render_template('index.html')
 
-
 @app.route('/tableau', methods=['GET'])
 def tableau():
     connection = get_db_connection()
@@ -88,7 +87,6 @@ def tableau():
     connection.close()
 
     return render_template("tableau.html", data=data, sort_by=sort_by, order=order, page=page, total_pages=total_pages)
-
 
 # Route pour ajouter une nouvelle entrée
 @app.route('/ajout', methods=['GET', 'POST'])
