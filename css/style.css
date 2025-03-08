@@ -1,0 +1,115 @@
+/* Styles généraux */
+body {
+    background-color: #f0f2f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    position: fixed;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(145deg, #2c3e50, #34495e);
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+    color: white;
+    border-radius: 0 15px 15px 0;
+    padding-right: 5px;
+}
+.sidebar nav a {
+    transition: 0.3s;
+    color: white;
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin: 5px 0;
+}
+.sidebar nav a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+}
+.sidebar .btn {
+    margin: 5px 0;
+    text-align: left;
+    padding: 10px 15px;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+.sidebar .btn:hover {
+    transform: translateX(5px);
+}
+.sidebar .mt-auto {
+    margin-bottom: 20px;
+    padding: 0 15px;
+}
+.sidebar .btn {
+    margin-bottom: 10px;
+    width: 100%;
+    text-align: left;
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+.sidebar .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Contenu principal */
+.content {
+    margin-left: 270px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+    margin-right: 20px;
+}
+
+/* Titres et formulaires */
+h2 {
+    color: #2c3e50;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+.form-control, .form-select {
+    border-radius: 5px;
+    border: 1px solid #bdc3c7;
+    padding: 10px;
+    transition: 0.3s;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+/* Boutons personnalisés */
+.btn-primary {
+    background: linear-gradient(145deg, #3498db, #2980b9);
+    border: none;
+    transition: 0.3s;
+}
+.btn-primary:hover {
+    background: linear-gradient(145deg, #2980b9, #3498db);
+    transform: translateY(-2px);
+}
+.btn-success {
+    background: linear-gradient(145deg, #2ecc71, #27ae60);
+    border: none;
+    transition: 0.3s;
+}
+.btn-success:hover {
+    background: linear-gradient(145deg, #27ae60, #2ecc71);
+    transform: translateY(-2px);
+}
+.btn-outline-secondary {
+    border: 1px solid #bdc3c7;
+    color: #7f8c8d;
+    transition: 0.3s;
+}
+.btn-outline-secondary:hover {
+    background-color: #bdc3c7;
+    color: white;
+    transform: translateY(-2px);
+}
