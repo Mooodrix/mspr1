@@ -25,10 +25,11 @@ config = {
 
 # Colonnes attendues dans le CSV
 EXPECTED_COLUMNS = {
-    "location", "iso_code", "date", "total_cases", "total_deaths",
+    "location", "date", "total_cases", "total_deaths",
     "new_cases", "new_deaths", "new_cases_smoothed", "new_deaths_smoothed",
     "new_cases_per_million", "total_cases_per_million", "new_cases_smoothed_per_million",
-    "new_deaths_per_million", "total_deaths_per_million", "new_deaths_smoothed_per_million"
+    "new_deaths_per_million", "total_deaths_per_million", "new_deaths_smoothed_per_million",
+    "CaseGrowthRate"
 }
 
 # Fonction pour se connecter à la BDD
@@ -268,15 +269,16 @@ def import_csv():
                 batch = df.iloc[start:end]
                 values = [
                     (
-                        row['location'], row['iso_code'], row['date'], row['total_cases'], row['total_deaths'],
+                        row['location'], row['date'], row['total_cases'], row['total_deaths'],
                         row['new_cases'], row['new_deaths'], row['new_cases_smoothed'], row['new_deaths_smoothed'],
                         row['new_cases_per_million'], row['total_cases_per_million'], row['new_cases_smoothed_per_million'],
-                        row['new_deaths_per_million'], row['total_deaths_per_million'], row['new_deaths_smoothed_per_million']
+                        row['new_deaths_per_million'], row['total_deaths_per_million'], row['new_deaths_smoothed_per_million'],
+                        row['CaseGrowthRate']
                     )
                     for _, row in batch.iterrows()
                 ]
                 cursor.executemany("""
-                    INSERT INTO monkeypox_data (location, iso_code, date, total_cases, total_deaths, new_cases, new_deaths, new_cases_smoothed, new_deaths_smoothed, new_cases_per_million, total_cases_per_million, new_cases_smoothed_per_million, new_deaths_per_million, total_deaths_per_million, new_deaths_smoothed_per_million)
+                    INSERT INTO monkeypox_data (location, date, total_cases, total_deaths, new_cases, new_deaths, new_cases_smoothed, new_deaths_smoothed, new_cases_per_million, total_cases_per_million, new_cases_smoothed_per_million, new_deaths_per_million, total_deaths_per_million, new_deaths_smoothed_per_million, CaseGrowthRate)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, values)
 
