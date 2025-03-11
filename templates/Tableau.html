@@ -250,7 +250,6 @@
         <a href="/" class="btn btn-outline-dark w-100 text-start mb-2">🏠 Accueil</a>
         <a href="/tableau" class="btn btn-outline-dark w-100 text-start mb-2">📊 Tableau</a>
         <a href="/graphique" class="btn btn-outline-dark w-100 text-start mb-2">📈 Graphique</a>
-        <a href="/world-map" class="btn btn-outline-dark w-100 text-start">🌎 Carte mondiale</a>
     </nav>
 
     <!-- Boutons en bas -->
@@ -279,7 +278,6 @@
             <thead class="table-dark">
                 <tr>
                     <th>Lieu</th>
-                    <th>Code ISO</th>
                     <th>Date</th>
                     <th>Total Cas</th>
                     <th>Actions</th>
@@ -289,12 +287,11 @@
                 {% for row in data %}
                 <tr>
                     <td>{{ row.location }}</td>
-                    <td>{{ row.iso_code }}</td>
                     <td>{{ row.date }}</td>
                     <td>{{ row.total_cases }}</td>
                     <td class="d-flex gap-1">
-                        <a href="/edit/{{ row.id }}" class="btn btn-warning btn-sm">✏️ Modifier</a>
-                        <a href="/delete/{{ row.id }}" class="btn btn-danger btn-sm">🗑 Supprimer</a>
+                        <a href="/edit/{{ row.id }}" class="btn btn-warning btn-sm">✏️</a>
+                        <a href="/delete/{{ row.id }}" class="btn btn-danger btn-sm">🗑</a>
                     </td>
                 </tr>
                 {% endfor %}

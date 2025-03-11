@@ -241,7 +241,6 @@
         <a href="/" class="btn btn-outline-dark w-100 text-start mb-2">🏠 Accueil</a>
         <a href="/tableau" class="btn btn-outline-dark w-100 text-start mb-2">📊 Tableau</a>
         <a href="/graphique" class="btn btn-outline-dark w-100 text-start mb-2">📈 Graphique</a>
-        <a href="/world-map" class="btn btn-outline-dark w-100 text-start">Carte du Monde</a>
     </nav>
 
     <!-- Boutons en bas -->
@@ -267,31 +266,19 @@
             <label for="location" class="form-label">Lieu</label>
             <input type="text" class="form-control" id="location" name="location" value="{{ row.location }}" required>
         </div>
-
-        <div class="mb-3">
-            <label for="iso_code" class="form-label">Code ISO</label>
-            <input type="text" class="form-control" id="iso_code" name="iso_code" value="{{ row.iso_code }}" required>
-        </div>
-
         <div class="mb-3">
             <label for="date" class="form-label">Date</label>
             <input type="date" class="form-control" id="date" name="date" value="{{ row.date }}" required>
         </div>
-
         <div class="mb-3">
             <label for="total_cases" class="form-label">Total des cas</label>
             <input type="number" class="form-control" id="total_cases" name="total_cases" value="{{ row.total_cases }}" required>
         </div>
-        
+    
         <div class="d-flex justify-content-between mt-3">
             <a href="/tableau" class="btn btn-secondary">Retourner au tableau</a>
             <button type="submit" class="btn btn-primary">Modifier</button>
         </div>
-        
-
-    
-
- 
 </body>
 </html>
     
