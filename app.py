@@ -643,6 +643,28 @@ def get_bar_data():
         "datasets": datasets
     })
 
+@app.route('/api/general-info', methods=['GET'])
+def get_general_info():
+    connection = get_db_connection()
+    if connection is None:
+        return jsonify({"error": "Database connection failed"}), 500
+
+    cursor = connection.cursor(dictionary=True)
+    
+    query = """
+        SELECT 
+            SUM(total_cases) as total_cases,
+            SUM(total_deaths) as total_deaths,
+            DATE(MAX(date)) as last_update
+        FROM monkeypox_data
+    """
+    cursor.execute(query)
+    data = cursor.fetchone()
+    
+    cursor.close()
+    connection.close()
+    
+    return jsonify(data)
 
 if __name__ == '__main__':
     if not os.path.exists("uploads"):
