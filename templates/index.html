@@ -96,6 +96,41 @@
             border-radius: 10px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
             font-size: 14px;
+            margin-top: 20px; /* Add margin-top for spacing */
+        }
+        .info-box canvas {
+            max-width: 300px; /* Reduce the size of the pie chart */
+            margin: 0 auto; /* Center the chart */
+        }
+        .stat-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: 0.3s;
+            margin-bottom: 20px;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        .stat-card .icon {
+            font-size: 2rem;
+            color: white;
+        }
+        .stat-card .details {
+            text-align: right;
+        }
+        .stat-card .details h5 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: white;
+        }
+        .stat-card .details p {
+            margin: 0;
+            color: white;
         }
     
         .legend {
@@ -267,32 +302,41 @@
     <!-- Info Box -->
     <div class="row">
         <div class="col-md-4">
-            <div class="card text-white bg-primary mb-3">
-                <div class="card-header">Cas</div>
-                <div class="card-body">
-                    <h5 class="card-title" id="total_cases">0</h5>
+            <div class="stat-card bg-primary">
+                <div class="icon">
+                    <i class="bi bi-bar-chart"></i>
+                </div>
+                <div class="details">
+                    <h5 id="total_cases">0</h5>
+                    <p>Cas</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-white bg-danger mb-3">
-                <div class="card-header">Décès</div>
-                <div class="card-body">
-                    <h5 class="card-title" id="total_deaths">0</h5>
+            <div class="stat-card bg-danger">
+                <div class="icon">
+                    <i class="bi bi-graph-down"></i>
+                </div>
+                <div class="details">
+                    <h5 id="total_deaths">0</h5>
+                    <p>Décès</p>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card text-white bg-secondary mb-3">
-                <div class="card-header">Dernière mise à jour</div>
-                <div class="card-body">
-                    <h5 class="card-title" id="last_update">N/A</h5>
+            <div class="stat-card bg-secondary">
+                <div class="icon">
+                    <i class="bi bi-calendar"></i>
+                </div>
+                <div class="details">
+                    <h5 id="last_update">N/A</h5>
+                    <p>Dernière mise à jour</p>
                 </div>
             </div>
         </div>
     </div>
     <div class="info-box">
-        <canvas id="info-chart" width="400" height="200"></canvas>
+        <canvas id="info-chart" width="300" height="300"></canvas>
     </div>
 </div>
 
