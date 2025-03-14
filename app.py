@@ -567,8 +567,8 @@ def get_bar_data():
             # Get countries with highest case counts
             query = f"""
                 SELECT location, 
-                       MAX(total_cases) as cases, 
-                       MAX(total_deaths) as deaths
+                MAX(total_cases) as cases, 
+                MAX(total_deaths) as deaths
                 FROM monkeypox_data
                 WHERE location != 'World' {region_condition}
                 GROUP BY location
@@ -602,7 +602,7 @@ def get_bar_data():
             # Get countries with highest cases per million
             query = f"""
                 SELECT location, 
-                       MAX(total_cases_per_million) as cases_per_million
+                MAX(total_cases_per_million) as cases_per_million
                 FROM monkeypox_data
                 WHERE location != 'World' {region_condition}
                 GROUP BY location
