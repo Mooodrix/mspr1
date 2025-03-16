@@ -158,10 +158,6 @@ La documentation est régulièrement mise à jour. Pour contribuer à la documen
 - Vérifiez que le service MySQL est en cours d'exécution
 - Vérifiez que le certificat SSL est bien présent et valide
 
-### Erreurs d'importation CSV
-- Vérifiez que le format du CSV correspond aux colonnes attendues
-- Vérifiez que le dossier `uploads` existe et est accessible en écriture
-
 ### Problèmes d'affichage graphique
 - Assurez-vous que Chart.js est correctement chargé
 - Vérifiez la console du navigateur pour d'éventuelles erreurs JavaScript
