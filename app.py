@@ -1,4 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask_swagger_ui import get_swaggerui_blueprint
+from flask_cors import CORS
 import mysql.connector
 import pandas as pd
 import os
@@ -10,6 +12,7 @@ from urllib.parse import urlencode
 import logging
 
 app = Flask(__name__)
+CORS(app)
 app.config["UPLOAD_FOLDER"] = "uploads"
 
 # Configuration MySQL
@@ -31,6 +34,598 @@ EXPECTED_COLUMNS = {
     "new_deaths_per_million", "total_deaths_per_million", "new_deaths_smoothed_per_million",
     "CaseGrowthRate"
 }
+
+
+def setup_swagger(app):
+    # URL pour accéder à la documentation Swagger
+    SWAGGER_URL = '/api/docs'
+    
+    # URL pour accéder au fichier de spécification OpenAPI
+    API_URL = '/swagger/swagger.yaml'
+    
+    # Créer un blueprint pour Swagger UI avec une meilleure configuration
+    swaggerui_blueprint = get_swaggerui_blueprint(
+        SWAGGER_URL,
+        API_URL,
+        config={
+            'app_name': "Monkeypox Data API",
+            'dom_id': '#swagger-ui',
+            'layout': 'BaseLayout',
+            'deepLinking': True,
+            'showExtensions': True,
+            'showCommonExtensions': True,
+            'supportedSubmitMethods': ['get', 'post', 'put', 'delete', 'patch'],
+            'validatorUrl': None  # Désactiver la validation externe
+        }
+    )
+    
+    # Enregistrer le blueprint dans l'application Flask
+    app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+    
+    # Mettre à jour le serveur dans la spécification Swagger
+    @app.route('/swagger/swagger.yaml')
+    def serve_swagger_spec():
+        from flask import Response
+        
+        # Charger le YAML comme objet Python pour le modifier
+        swagger_content = """openapi: 3.0.0
+info:
+  title: Monkeypox Data API
+  description: API pour la gestion et l'analyse des données Monkeypox
+  version: 1.3.0
+servers:
+  - url: /
+    description: Serveur actuel
+tags:
+  - name: Visualisation
+    description: Points d'entrée pour la visualisation des données
+  - name: Informations
+    description: Points d'entrée pour les informations générales
+  - name: CRUD
+    description: Opérations de création, lecture, mise à jour et suppression des données
+
+paths:
+  /api/pie-data:
+    get:
+      tags:
+        - Visualisation
+      summary: Récupère les données pour un graphique en camembert
+      description: Fournit les données formatées pour un graphique en camembert montrant la répartition des cas/décès par continent ou pays
+      parameters:
+        - name: metric
+          in: query
+          description: Type de données à visualiser
+          required: false
+          schema:
+            type: string
+            enum: [total_cases, total_deaths, cases_per_million]
+            default: total_cases
+        - name: view_type
+          in: query
+          description: Type de visualisation
+          required: false
+          schema:
+            type: string
+            enum: [continent, top-countries]
+            default: continent
+      responses:
+        '200':
+          description: Données du graphique en camembert récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    description: Noms des continents ou pays
+                    items:
+                      type: string
+                    example: ["Europe", "North America", "South America", "Asia", "Africa", "Oceania"]
+                  values:
+                    type: array
+                    description: Valeurs correspondantes pour chaque label
+                    items:
+                      type: number
+                    example: [45, 25, 15, 8, 5, 2]
+        '500':
+          description: Erreur serveur lors de la récupération des données
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Message d'erreur
+                    example: "Database connection failed"
+
+  /api/line-data:
+    get:
+      tags:
+        - Visualisation
+      summary: Récupère les données pour un graphique linéaire
+      description: Fournit les données formatées pour un graphique linéaire montrant l'évolution temporelle des cas ou décès
+      parameters:
+        - name: data_type
+          in: query
+          description: Type de données à visualiser
+          required: false
+          schema:
+            type: string
+            enum: [total_cases, new_cases, new_cases_smoothed]
+            default: total_cases
+        - name: time_range
+          in: query
+          description: Période de temps à analyser
+          required: false
+          schema:
+            type: string
+            enum: [3m, 6m, 1y, 2022, all]
+            default: 3m
+        - name: location
+          in: query
+          description: Zone géographique à analyser
+          required: false
+          schema:
+            type: string
+            enum: [all, top5, continent]
+            default: all
+      responses:
+        '200':
+          description: Données du graphique linéaire récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    description: Dates pour l'axe X
+                    items:
+                      type: string
+                    example: ["Jan 2022", "Feb 2022", "Mar 2022", "Apr 2022"]
+                  datasets:
+                    type: array
+                    description: Jeux de données pour chaque série
+                    items:
+                      type: object
+                      properties:
+                        label:
+                          type: string
+                          description: Nom de la série
+                          example: "World"
+                        data:
+                          type: array
+                          description: Valeurs de la série
+                          items:
+                            type: number
+                          example: [100, 150, 200, 180]
+                        borderColor:
+                          type: string
+                          description: Couleur de la bordure de la ligne
+                          example: "rgba(54, 162, 235, 1)"
+                        backgroundColor:
+                          type: string
+                          description: Couleur de fond
+                          example: "rgba(54, 162, 235, 0.7)"
+        '500':
+          description: Erreur serveur lors de la récupération des données
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Message d'erreur
+                    example: "Database connection failed"
+
+  /api/bar-data:
+    get:
+      tags:
+        - Visualisation
+      summary: Récupère les données pour un graphique à barres
+      description: Fournit les données formatées pour un graphique à barres comparant différents pays
+      parameters:
+        - name: comparison
+          in: query
+          description: Type de comparaison
+          required: false
+          schema:
+            type: string
+            enum: [cases_deaths, per_million, growth_rate]
+            default: cases_deaths
+        - name: region
+          in: query
+          description: Région à filtrer
+          required: false
+          schema:
+            type: string
+            enum: [all, europe, north_america, south_america, asia, africa, oceania]
+            default: all
+        - name: count
+          in: query
+          description: Nombre de pays à afficher
+          required: false
+          schema:
+            type: integer
+            enum: [5, 10, 15, 20]
+            default: 5
+      responses:
+        '200':
+          description: Données du graphique à barres récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    description: Noms des pays
+                    items:
+                      type: string
+                    example: ["United States", "Brazil", "United Kingdom", "Spain", "France"]
+                  datasets:
+                    type: array
+                    description: Jeux de données pour chaque série
+                    items:
+                      type: object
+                      properties:
+                        label:
+                          type: string
+                          description: Nom de la série
+                          example: "Total Cases"
+                        data:
+                          type: array
+                          description: Valeurs de la série
+                          items:
+                            type: number
+                          example: [1000, 800, 600, 500, 400]
+                        backgroundColor:
+                          type: string
+                          description: Couleur de fond des barres
+                          example: "rgba(54, 162, 235, 0.7)"
+                        borderColor:
+                          type: string
+                          description: Couleur de la bordure des barres
+                          example: "rgba(54, 162, 235, 1)"
+                        borderWidth:
+                          type: integer
+                          description: Largeur de la bordure
+                          example: 1
+        '500':
+          description: Erreur serveur lors de la récupération des données
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Message d'erreur
+                    example: "Database connection failed"
+
+  /api/general-info:
+    get:
+      tags:
+        - Informations
+      summary: Récupère les informations générales sur les données Monkeypox
+      description: Fournit un résumé des cas totaux, décès et date de dernière mise à jour
+      responses:
+        '200':
+          description: Informations générales récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_cases:
+                    type: number
+                    description: Nombre total de cas
+                    example: 12500
+                  total_deaths:
+                    type: number
+                    description: Nombre total de décès
+                    example: 450
+                  last_update:
+                    type: string
+                    description: Date de la dernière mise à jour
+                    format: date
+                    example: "2023-06-30"
+        '500':
+          description: Erreur serveur lors de la récupération des données
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Message d'erreur
+                    example: "Database connection failed"
+
+  # Documentation des opérations CRUD
+  /tableau:
+    get:
+      tags:
+        - CRUD
+      summary: Affiche les données Monkeypox sous forme de tableau
+      description: Récupère les données Monkeypox avec pagination et options de tri
+      parameters:
+        - name: sort_by
+          in: query
+          description: Champ pour le tri des données
+          required: false
+          schema:
+            type: string
+            enum: [location, date, total_cases, total_deaths]
+            default: location
+        - name: order
+          in: query
+          description: Ordre de tri (ascendant ou descendant)
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: page
+          in: query
+          description: Numéro de la page à afficher
+          required: false
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Données récupérées avec succès et affichées dans un tableau
+        '500':
+          description: Erreur serveur lors de la récupération des données
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /ajout:
+    get:
+      tags:
+        - CRUD
+      summary: Affiche le formulaire d'ajout de données
+      description: Renvoie la page HTML avec le formulaire pour ajouter une nouvelle entrée
+      responses:
+        '200':
+          description: Formulaire d'ajout affiché avec succès
+    post:
+      tags:
+        - CRUD
+      summary: Ajoute une nouvelle entrée de données
+      description: Crée une nouvelle entrée dans la base de données Monkeypox à partir des données du formulaire
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                location:
+                  type: string
+                  description: Nom du pays ou de la région
+                  example: "France"
+                date:
+                  type: string
+                  format: date
+                  description: Date de l'enregistrement (YYYY-MM-DD)
+                  example: "2023-01-15"
+                total_cases:
+                  type: number
+                  description: Nombre total de cas
+                  example: 1250
+              required:
+                - location
+                - date
+                - total_cases
+      responses:
+        '302':
+          description: Redirection vers la page du tableau après ajout réussi
+        '500':
+          description: Erreur serveur lors de l'ajout des données
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /delete/{id}:
+    get:
+      tags:
+        - CRUD
+      summary: Supprime une entrée de données
+      description: Supprime une entrée spécifique de la base de données en fonction de son ID
+      parameters:
+        - name: id
+          in: path
+          description: ID de l'entrée à supprimer
+          required: true
+          schema:
+            type: integer
+          example: 123
+      responses:
+        '302':
+          description: Redirection vers la page du tableau après suppression réussie
+        '500':
+          description: Erreur serveur lors de la suppression
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /edit/{id}:
+    get:
+      tags:
+        - CRUD
+      summary: Affiche le formulaire de modification pour une entrée spécifique
+      description: Récupère les données d'une entrée spécifique et affiche un formulaire pré-rempli pour la modification
+      parameters:
+        - name: id
+          in: path
+          description: ID de l'entrée à modifier
+          required: true
+          schema:
+            type: integer
+          example: 123
+        - name: sort_by
+          in: query
+          description: Champ pour le tri des données
+          required: false
+          schema:
+            type: string
+            default: location
+        - name: order
+          in: query
+          description: Ordre de tri (ascendant ou descendant)
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: page
+          in: query
+          description: Numéro de la page
+          required: false
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Formulaire de modification affiché avec succès
+        '404':
+          description: Entrée non trouvée
+        '500':
+          description: Erreur serveur lors de la récupération des données
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - CRUD
+      summary: Met à jour une entrée existante
+      description: Modifie les données d'une entrée spécifique dans la base de données
+      parameters:
+        - name: id
+          in: path
+          description: ID de l'entrée à modifier
+          required: true
+          schema:
+            type: integer
+          example: 123
+        - name: sort_by
+          in: query
+          description: Champ pour le tri des données après redirection
+          required: false
+          schema:
+            type: string
+            default: location
+        - name: order
+          in: query
+          description: Ordre de tri après redirection
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: page
+          in: query
+          description: Numéro de la page après redirection
+          required: false
+          schema:
+            type: integer
+            default: 1
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                location:
+                  type: string
+                  description: Nom du pays ou de la région
+                  example: "France"
+                date:
+                  type: string
+                  format: date
+                  description: Date de l'enregistrement (YYYY-MM-DD)
+                  example: "2023-01-15"
+                total_cases:
+                  type: number
+                  description: Nombre total de cas
+                  example: 1250
+              required:
+                - location
+                - date
+                - total_cases
+      responses:
+        '302':
+          description: Redirection vers la page du tableau après modification réussie
+        '404':
+          description: Entrée non trouvée
+        '500':
+          description: Erreur serveur lors de la mise à jour des données
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Message d'erreur
+      required:
+        - error
+    
+    MonkeypoxData:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Identifiant unique de l'entrée
+          example: 123
+        location:
+          type: string
+          description: Pays ou région
+          example: "France"
+        date:
+          type: string
+          format: date
+          description: Date de l'enregistrement
+          example: "2023-01-15"
+        total_cases:
+          type: number
+          description: Nombre total de cas
+          example: 1250
+        total_deaths:
+          type: number
+          description: Nombre total de décès
+          example: 45
+        new_cases:
+          type: number
+          description: Nouveaux cas
+          example: 25
+        new_deaths:
+          type: number
+          description: Nouveaux décès
+          example: 2
+      required:
+        - id
+        - location
+        - date
+        - total_cases"""
+        
+        return Response(swagger_content, mimetype='text/yaml')
 
 # Fonction pour se connecter à la BDD
 def get_db_connection():
@@ -604,4 +1199,12 @@ def get_general_info():
 if __name__ == '__main__':
     if not os.path.exists("uploads"):
         os.makedirs("uploads")
+    
+    # Créer le répertoire swagger si il n'existe pas
+    if not os.path.exists("swagger"):
+        os.makedirs("swagger")
+        
+    # Initialiser Swagger
+    setup_swagger(app)
+    
     app.run(debug=True)
